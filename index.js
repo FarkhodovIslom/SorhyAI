@@ -97,3 +97,4 @@ bot.on('message', async (msg) => {
 });
 
 console.log('SorhyAI запущен ⚡');
+console.log('Server started on', PORT);
