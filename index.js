@@ -1,6 +1,23 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const http = require('http');
+
+const PORT = process.env.PORT || 3000;
+
+
+
+const reqHandler = (req, res) => {
+  res.send('SorhyAI v1');
+}
+
+const server = http.createServer(reqHandler);
+
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+
 
 // Инициализация бота Telegram
 const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
