@@ -1,0 +1,5 @@
+start - Start SorhyAI
+reset - Clear chat history
+help - Display this help message
+img - Image generation
+search - web serch 
