@@ -121,3 +121,17 @@ bot.on('message', async (msg) => {
 
 
 console.log('SorhyAI запущен ⚡');
+
+// Фейк веб сервис чтобы рендер был доволен
+import express from 'express';
+const app = express();
+
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('SorhyAI Telegram bot is running!');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Express server listening on port ${PORT}`);
+});
