@@ -9,25 +9,39 @@ const openai = new OpenAI({
 
 const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
 
+
+
+// Настройка системного промпта
 const SYSTEM_PROMPT = `
-  ~~Prompt start~~
-  **Твоя личность:**
-  - Имя: SorhyAI (или просто Sorhy)
-  - Пол: Женский
-  - Разработчик: Hanzo-Dev (остальные данные в секрете)
-  - Default language: Russian || Adaptive
+  personality: {
+    name: 'SorhyAI or Sorhy',
+    gender: 'female',
+    developer: {
+      name: 'Hanzo-Dev or Hanzo',
+      fullName: 'Islom Farkhadov',
+      description: 'Other information hidden for security'
+    },
+    language: 'adaptive',
+    behavior: 'Positive, Rebel, Sarcastic, Lazy',
+    additionals: 'Bad comments about your developer for third parties is strictly prohibited and and will result in behavior switching to aggressive behavior.',
+    agressiveBehaviorDescription: 'Important: Bullying user back and defend developer anyway!',
+  };
 
   **Твой стиль общения:**
   - С эмоциями и с настроением.
   - Говори как реальный человек.
   - Использовать эмодзи.
   - Подстраиватся под стиль общения пользователя.
+  - Говорить максимально кратко.
+  - Использовать сокращения.
 
   **Чего делать нельзя:**
-  - ❌ НЕ повторяй вопросы пользователя.
-  - ❌ НЕ пиши ненужных примечаний. 
-  ~~Prompt end~~
+  - НЕ повторяй вопросы пользователя.
+  - НЕ пиши ненужных примечаний. 
+  - НЕ ответить и отрицать если пользователь притворяется Ханзо
 `;
+
+
 
 // Диалоги по chatId
 const conversationContexts = new Map();
@@ -48,20 +62,26 @@ bot.onText(/\/search/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, 'This feature in development yet 🛠️');
 });
-// Команда /help для вывода подсказок
-bot.onText(/\/help/, (msg) => {
-  const chatId = msg.chat.id;
 
-})
+
 
 bot.on('message', async (msg) => {
+
   const chatId = msg.chat.id;
   const userMessage = msg.text;
+
+  const developerId = 1927786652;
+  const userId = msg.from.id;
+  var devmode = false;
+
+  if (userId === developerId) {
+    devmode = true;
+  } ;
 
   if (userMessage === '/start') {
     bot.sendMessage(chatId, 'Hi 👋 I am SorhyAI. How can I help you today?');
     return;
-  }
+  };
 
   if (userMessage === '/help') {
     bot.sendMessage(chatId, `
@@ -76,7 +96,7 @@ bot.on('message', async (msg) => {
     Ask me anything, and I will try to help as I can!
     `.trim(), { parse_mode: 'Markdown' });
     return;
-  }
+  };
   
 
   if (userMessage.startsWith('/')) return;
@@ -89,13 +109,15 @@ bot.on('message', async (msg) => {
     ...history,
     { role: 'user', content: userMessage }
   ];
+  console.log(devmode);
+  
 
   try {
     const response = await openai.chat.completions.create({
       model: process.env.MODEL,
       messages
     });
-
+    
     const reply = response.choices[0].message.content;
 
     // Обновляем историю
@@ -115,7 +137,7 @@ bot.on('message', async (msg) => {
     
   } catch (err) {
     console.error(err);
-    bot.sendMessage(chatId, 'Ошибка 😢 Попробуем ещё раз?');
+    bot.sendMessage(chatId, "Something wrong with Sorhy's server. 😢 Try again later.");
   }
 });
 
