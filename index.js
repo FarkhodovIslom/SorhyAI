@@ -100,7 +100,7 @@ bot.on('message', async (msg) => {
   };
   
 
-  // if (userMessage.startsWith('/')) return;
+  if (userMessage.startsWith('/')) return;
 
   let history = conversationContexts.get(chatId) || [];
 
