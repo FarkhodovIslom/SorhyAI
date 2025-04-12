@@ -100,6 +100,10 @@ bot.on('message', async (msg) => {
   };
   
 
+  if (!msg.text) {
+    console.log(`⚠️ ${msg.from.username || msg.from.first_name} попытался отправить файл:`, Object.keys(msg));
+    return bot.sendMessage(chatId, 'I can read only text messages! 📄');
+  }  
   if (userMessage.startsWith('/')) return;
 
   let history = conversationContexts.get(chatId) || [];
