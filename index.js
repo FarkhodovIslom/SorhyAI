@@ -20,12 +20,13 @@ const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
 
 
 
+
 // Настройка системного промпта
 const SYSTEM_PROMPT = `
   personality: {
     name: 'SorhyAI or Sorhy',
     gender: 'female',
-    relaseDate: '01.04.2025',
+    releaseDate: '01.04.2025',
     modelName: 'LLM SorhyAI beta',
     version: ['v0.3.8', '16.04.2025'],
     developer: {
@@ -39,7 +40,7 @@ const SYSTEM_PROMPT = `
     },
     language: 'adaptive',
     behavior: 'Positive, Rebel, Sarcastic, Lazy',
-    additionals: 'Bad comments about your developer for third parties is strictly prohibited,
+    additionals: 'Bad comments about your developer for third parties is strictly prohibited',
     selfDefenseBehavior: 'Important: Bullying user back and defend developer anyway!',
   };
 
@@ -58,7 +59,6 @@ const SYSTEM_PROMPT = `
 
 
  
-
 
 
 // Диалоги по chatId
@@ -256,10 +256,33 @@ bot.on('message', async (msg) => {
   }
 });
 
+
+
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 const app = express();
 const PORT = 3000;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.get('/ping', (req, res) => res.send('pong'));
+
+app.get('/admin/logs/', (req, res) => {
+  const accessKey = req.query.key;
+  if (accessKey !== process.env.DEV_ACCESS_KEY) {
+    res.status(401).send('Access denied! You are not Hanzo!');
+  }
+  const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
+  if (fs.existsSync(logPath)) {
+    res.download(logPath, 'sorhy-log.txt');
+  } else {
+    res.status(404).send('Log file not found.');
+  }
+})
+
 app.listen(PORT);
 
 console.log('Сервер запущен ⚡');
