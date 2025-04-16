@@ -28,7 +28,7 @@ const SYSTEM_PROMPT = `
     gender: 'female',
     releaseDate: '01.04.2025',
     modelName: 'LLM SorhyAI beta',
-    version: ['v0.3.8', '16.04.2025'],
+    version: ['v0.4.0', '17.04.2025'],
     developer: {
       team: 'Han-Software',
       teamLead: {

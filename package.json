@@ -1,24 +1,25 @@
 {
   "name": "sorhyai_telegram-bot",
-  "version": "3.3.5",
+  "version": "0.4.0",
   "description": "## 📝 Описание Этот проект представляет собой Telegram бота для генерации ответов на сообщения пользователей. Бот работает на Node.js и может быть легко настроен и развернут.",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FarkhodovIslom/SorhyAI_telegram-bot.git"
+    "url": "git+https://github.com/FarkhodovIslom/SorhyAI_bot.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/FarkhodovIslom/SorhyAI_telegram-bot/issues"
+    "url": "https://github.com/FarkhodovIslom/SorhyAI_bot/issues"
   },
-  "homepage": "https://github.com/FarkhodovIslom/SorhyAI_telegram-bot#readme",
+  "homepage": "https://github.com/FarkhodovIslom/SorhyAI_bot#readme",
   "dependencies": {
     "axios": "^1.8.4",
     "chalk": "^5.4.1",
