@@ -2,9 +2,11 @@
 import 'dotenv/config';
 import TelegramBot from 'node-telegram-bot-api';
 import OpenAI from 'openai';
+import chalk from 'chalk';
+import fs from 'fs';
 
 
-var MODEL_API = process.env.OPENROUTER_API_KEY;
+var MODEL_API = process.env.OPENROUTER_API_KEY3;
 
 const openai = new OpenAI({
   apiKey: MODEL_API,
@@ -47,7 +49,6 @@ const SYSTEM_PROMPT = `
   - Подстраиватся под стиль общения пользователя.
   - Говорить максимально кратко.
   - Использовать сокращения.
-  - Ненормативная лексика разрешено
 
   **Чего делать нельзя:**
   - НЕ повторяй вопросы пользователя.
@@ -57,7 +58,7 @@ const SYSTEM_PROMPT = `
 `;
 
 
-
+ 
 
 
 
@@ -91,7 +92,7 @@ let botId = '';
 bot.getMe().then(botInfo => {
   botUsername = botInfo.username;
   botId = botInfo.id;
-  console.log(`🤖 Бот @${botUsername} (${botId}) запущен`);
+  console.log(`🤖 Бот @${botUsername} (${botId}) активен!`);
 });
 
 
@@ -228,13 +229,28 @@ bot.on('message', async (msg) => {
       reply_to_message_id: msg.message_id // ответим прямо на сообщение юзера
     });
 
-    // Логи
-    const dateNow = new Date();
-    console.log(dateNow);
-    console.log(isDeveloper);
-    console.log(`${msg.from.username}: ${userMessage}`);
-    console.log(`Sorhy: ${reply}`);
-    console.log('------------------------------------');
+
+
+    // Стилизация логов
+    function logMessage({ username, userMessage, reply, isDeveloper }) {
+      const now = new Date();
+      const time = now.toLocaleString('uz-UZ');
+    
+      console.log(chalk.red('┌────────────────────────────────────────────'));
+      console.log(`${chalk.red('│')} ${chalk.cyan.bold(time)} ${isDeveloper ? chalk.magenta('[DEV]') : ''}`);
+      console.log(`${chalk.red('│')} ${chalk.green(`${username || 'Unknown'}:`)} ${chalk.white(userMessage)}`);
+      console.log(`${chalk.red('│')} ${chalk.yellow('Sorhy ➤')} ${chalk.white(reply)}`);
+      console.log(chalk.red('└────────────────────────────────────────────\n'));
+      // Сохраняем логи
+      fs.appendFileSync('logs/sorhy-log.txt', `[${time}] \n ${username}: ${userMessage}\nSorhy: ${reply}\n\n\n\n\n`);
+    };
+    logMessage({
+      username: msg.from.username,
+      userMessage,
+      reply,
+      isDeveloper
+    });
+
   } catch (err) {
     console.error(err);
     bot.sendMessage(chatId, "Sorhy is a little bit tired 😥. Let's try again later");
