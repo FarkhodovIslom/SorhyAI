@@ -258,7 +258,8 @@ bot.on('message', async (msg) => {
 
 import express from 'express';
 const app = express();
+const PORT = 3000;
 app.get('/ping', (req, res) => res.send('pong'));
-app.listen(3000);
+app.listen(PORT);
 
 console.log('Сервер запущен ⚡');
