@@ -170,16 +170,17 @@ bot.onText(/\/model_hybrid/, (msg) => {
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, `
-    🤖 *Список команд SorhyAI:*
-      
-    /start – 🔅 Запуск бота  
-    /reset – 🔄 Сброс истории диалога
-    /model_lite – ⚡️ Выбрать Sorhy-LLM Lite (Dense Transformer)
-    /model_pro – ⚡️⚡️⚡️ Выбрать Sorhy-LLM Pro (MoE 128)
-    /model_hybrid – ⚡️♾️ Выбрать Sorhy-LLM Hybrid-beta (MoE 256) 
+    Hi! I am SorhyAI, your personal assistant. Here are some commands you can use:
+    
+    /start – 🔅 Launch the bot  
+    /reset – 🔄 Reset conversation history
+    /model_lite – ⚡️ Switch to Sorhy-LLM Lite (Dense Transformer) 17B
+    /model_pro – ⚡️⚡️⚡️ Switch to Sorhy-LLM Pro (MoE-128) 25B
+    /model_hybrid – ⚡️♾️ Switch to Sorhy-LLM Hybrid-beta (MoE-256) 37B
+    /help – ❓ Get help 
     
     Ask me anything, and I will try to help as I can!
-    `.trim(), { parse_mode: 'Markdown' });
+    `.trim(), { parse_mode: 'HTML' });
 });
 
 
