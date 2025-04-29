@@ -1,5 +1,5 @@
-start - Start SorhyAI
 reset - Clear chat history
-help - Display this help message
-img - Image generation
-search - web serch 
+help - Display help message
+model_lite - Switch to SorhyAI-Lite, a lightweight Dense-Transformer based model
+model_pro - Switch to SorhyAI-Pro, a powerful model based on MoE-128 
+model_hybrid - Switch to SorhyAI-Hybrid, a flagship model based on MoE-256 (beta)

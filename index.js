@@ -29,7 +29,7 @@ function generateSystemPrompt() {
   return `
   {
     "name": "SorhyAI or Sorhy",
-    "version": "v1.1.2",
+    "version": "v1.2.0",
     "currentModel": "${modelName}",
     "allModels": [
       "Sorhy-LLM Lite (Dense Transformer)",
@@ -123,7 +123,6 @@ bot.onText(/\/reset/, (msg) => {
 // Команда /model_lite для для Lite модели
 bot.onText(/\/model_lite/, (msg) => {
   const chatId = msg.chat.id;
-  if (msg.from.id !== 1927786652) return;
 
   if (MODEL === process.env.MODEL_LITE) {
     return bot.sendMessage(chatId, 'Model Sorhy-lite 🧠 already in use');
@@ -139,7 +138,6 @@ bot.onText(/\/model_lite/, (msg) => {
 // Команда /model_pro для Pro модели
 bot.onText(/\/model_pro/, (msg) => {
   const chatId = msg.chat.id;
-  if (msg.from.id !== 1927786652) return;
 
   if (MODEL === process.env.MODEL_PRO) {
     return bot.sendMessage(chatId, 'Model Sorhy-pro 🧠 already in use!');
@@ -154,7 +152,6 @@ bot.onText(/\/model_pro/, (msg) => {
 // Команда /model_hybrid для Hybrid модели
 bot.onText(/\/model_hybrid/, (msg) => {
   const chatId = msg.chat.id;
-  if (msg.from.id !== 1927786652) return;
 
   if (MODEL === process.env.MODEL_HYBRID) {
     return bot.sendMessage(chatId, 'Model Sorhy-hybrid 🧠 already in use!');
