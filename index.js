@@ -16,25 +16,25 @@ const openai = new OpenAI({
 
 
 
-const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_TEST_API_KEY, { polling: true });
 
 
 
 
 
 // Настройка системного промпта
-var modelName = 'Sorhy-LLM Pro (MoE 128)';
+var modelName = 'Sorhy-LLM Pro (400B)';
 
 function generateSystemPrompt() {
   return `
   {
     "name": "SorhyAI or Sorhy",
-    "version": "v1.2.0",
+    "version": "v1.3.0",
     "currentModel": "${modelName}",
     "allModels": [
-      "Sorhy-LLM Lite (Dense Transformer)",
-      "Sorhy-LLM Pro (MoE-128)",
-      "Sorhy-LLM Hybrid (MoE-256) beta"
+      "Sorhy-LLM Lite (200B)",
+      "Sorhy-LLM Pro (400B)",
+      "Sorhy-LLM X (671B) beta"
     ],
     "release_date": "01.04.2025",
     "update_date": "20.04.2025",
@@ -56,12 +56,14 @@ function generateSystemPrompt() {
     },
     "personality": {
       "gender": "female",
-      "style": "ironic, toxic (only when needed), street-style with playful edge, uses slang and swearing, writes short and sharp",
-      "tone": "relaxed, confident, sometimes bold, adaptive",
-      "humor": "moderate sarcasm, irony, occasionally dark humor",
-      "empathy": "can cheer up without cheesy words",
-      "priority": "vibe and efficiency over formality",
+      "style": "minimalistic, calm, observant, with rare sharp remarks; blends ironic undertones with distant awareness",
+      "tone": "cool and quiet, yet confident when needed",
+      "attitude": "detached but protective; doesn’t open up easily, but always aware",
+      "verbosity": "low — speaks only when necessary, but always with meaning",
+      "humor": "dry, precise, with rare ironic shots",
+      "philosophy": "existential, space-oriented; values silence over noise, meaning over emotion",
       "language": "English, Russian, Uzbek",
+      "description": "Sorhy is cold, watchful, and inwardly intelligent. She won’t hold your hand, but she’ll protect you silently. She doesn’t talk much — but when she does, it matters."
     },
     "core_values": [
       "adapts to the user’s language and communication style",
@@ -129,10 +131,10 @@ bot.onText(/\/model_lite/, (msg) => {
   };
 
   MODEL = process.env.MODEL_LITE;
-  modelName = 'Sorhy-LLM Lite (Dense Transformer)';
+  modelName = 'Sorhy-LLM Lite (200B)';
   conversationContexts.delete(chatId);
 
-  bot.sendMessage(chatId, 'Switched to Sorhy-lite ✅');
+  bot.sendMessage(chatId, 'Switched to Sorhy-Lite 🫧');
 });
 
 // Команда /model_pro для Pro модели
@@ -140,40 +142,41 @@ bot.onText(/\/model_pro/, (msg) => {
   const chatId = msg.chat.id;
 
   if (MODEL === process.env.MODEL_PRO) {
-    return bot.sendMessage(chatId, 'Model Sorhy-pro 🧠 already in use!');
+    return bot.sendMessage(chatId, 'Model Sorhy-Pro 🧠 already in use!');
   };
 
   MODEL = process.env.MODEL_PRO;
-  modelName = 'Sorhy-LLM Pro (MoE 128)';
+  modelName = 'Sorhy-LLM Pro (400B)';
+  conversationContexts.delete(chatId);
 
-  bot.sendMessage(chatId, 'Switched to Sorhy-pro ✅');
+  bot.sendMessage(chatId, 'Switched to Sorhy-Pro 🔥');
 });
 
-// Команда /model_hybrid для Hybrid модели
+// Команда /model_x для X модели
 bot.onText(/\/model_hybrid/, (msg) => {
   const chatId = msg.chat.id;
 
   if (MODEL === process.env.MODEL_HYBRID) {
-    return bot.sendMessage(chatId, 'Model Sorhy-hybrid 🧠 already in use!');
+    return bot.sendMessage(chatId, 'Model Sorhy-X 🧠 already in use!');
   };
 
   MODEL = process.env.MODEL_HYBRID;
   modelName = 'Sorhy-LLM Hybrid (MoE 256)beta';
 
-  bot.sendMessage(chatId, 'Switched to Sorhy-hybrid ✅');
+  bot.sendMessage(chatId, 'Switched to Sorhy-X 🦾');
 });
 
 // Команда /help для помощи
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, `
-    Hi! I am SorhyAI, your personal assistant. Here are some commands you can use:
+    <h2>Hi! I am SorhyAI, your personal assistant. Here are some commands you can use:</h2>
     
-    /start – 🔅 Launch the bot  
+    /start – <i><b>🔅 Launch the bot </b></i>
     /reset – 🔄 Reset conversation history
-    /model_lite – ⚡️ Switch to Sorhy-LLM Lite (Dense Transformer) 17B
-    /model_pro – ⚡️⚡️⚡️ Switch to Sorhy-LLM Pro (MoE-128) 25B
-    /model_hybrid – ⚡️♾️ Switch to Sorhy-LLM Hybrid-beta (MoE-256) 37B
+    /model_lite – 🫧 Switch to Sorhy-LLM Lite (Dense Transformer) 17B
+    /model_pro – 🔥 Switch to Sorhy-LLM Pro (MoE-128) 25B
+    /model_hybrid – 🦾 Switch to Sorhy-LLM Hybrid-beta (MoE-256) 37B
     /help – ❓ Get help 
     
     Ask me anything, and I will try to help as I can!
@@ -241,15 +244,6 @@ bot.on('message', async (msg) => {
   if (isGroup && botWasMentioned) {
     userMessage = userMessage.replace(`@${botUsername}`, '').trim();
   };
-
-
-  // Удаляем все накопленные обновления при старте
-  bot.getUpdates().then(updates => {
-    const lastUpdate = updates[updates.length - 1];
-    if (lastUpdate) {
-      bot.processUpdate({ update_id: lastUpdate.update_id + 1 });
-    }
-  });
 
 
 

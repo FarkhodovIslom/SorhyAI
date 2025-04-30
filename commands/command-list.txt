@@ -1,5 +1,5 @@
 reset - Clear chat history
 help - Display help message
-model_lite - Switch to SorhyAI-Lite, a lightweight Dense-Transformer based model
-model_pro - Switch to SorhyAI-Pro, a powerful model based on MoE-128 
-model_hybrid - Switch to SorhyAI-Hybrid, a flagship model based on MoE-256 (beta)
+model_lite - Switch to SorhyAI-Lite, a lightweight model with fewer parameters
+model_pro - Switch to SorhyAI-Pro, a more advanced model with more parameters 
+model_x - Switch to SorhyAI-X, a high-performance model with the most parameters
