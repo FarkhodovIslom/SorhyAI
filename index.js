@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import fs from 'fs';
 
 
-var MODEL_API = process.env.OPENROUTER_API_KEY1;
+var MODEL_API = process.env.OPENROUTER_API_KEY;
 var MODEL = process.env.MODEL_PRO;
 
 const openai = new OpenAI({
