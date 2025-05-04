@@ -1,28 +1,18 @@
-
 import 'dotenv/config';
 import TelegramBot from 'node-telegram-bot-api';
 import OpenAI from 'openai';
 import chalk from 'chalk';
 import fs from 'fs';
 
-
 var MODEL_API = process.env.OPENROUTER_API_KEY2;
-// var MODEL = process.env.MODEL_PRO;
 
 const openai = new OpenAI({
   apiKey: MODEL_API,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-
-
 const bot = new TelegramBot(process.env.TGBOT_TEST_API_KEY, { polling: true });
 
-
-
-
-
-// Настройка системного промпта
 var modelName = 'Sorhy-NLP Pro (400B)';
 
 function generateSystemPrompt() {
@@ -85,69 +75,14 @@ function generateSystemPrompt() {
 `.trim();
 }
 
-
-
-
-// Диалоги по chatId
 const conversationContexts = new Map();
 
-
-
-
-
-
-// Команда /reset для очистки истории
 bot.onText(/\/reset/, (msg) => {
   const chatId = msg.chat.id;
   conversationContexts.delete(chatId);
   bot.sendMessage(chatId, 'Chat history cleared ✅');
 });
 
-// Команда /model_lite для для Lite модели
-// bot.onText(/\/model_lite/, (msg) => {
-//   const chatId = msg.chat.id;
-
-//   if (MODEL === process.env.MODEL_LITE) {
-//     return bot.sendMessage(chatId, 'Model Sorhy-lite already in use ✔️');
-//   };
-
-//   MODEL = process.env.MODEL_LITE;
-//   modelName = 'Sorhy-NLP Lite';
-//   conversationContexts.delete(chatId);
-
-//   bot.sendMessage(chatId, 'Switched to Sorhy-Lite 🫧');
-// });
-
-// // Команда /model_pro для Pro модели
-// bot.onText(/\/model_pro/, (msg) => {
-//   const chatId = msg.chat.id;
-
-//   if (MODEL === process.env.MODEL_PRO) {
-//     return bot.sendMessage(chatId, 'Model Sorhy-Pro already in use ✔️');
-//   };
-
-//   MODEL = process.env.MODEL_PRO;
-//   modelName = 'Sorhy-NLP Pro';
-//   conversationContexts.delete(chatId);
-
-//   bot.sendMessage(chatId, 'Switched to Sorhy-Pro 🔥');
-// });
-
-// // Команда /model_x для X модели
-// bot.onText(/\/model_x/, (msg) => {
-//   const chatId = msg.chat.id;
-
-//   if (MODEL === process.env.MODEL_X) {
-//     return bot.sendMessage(chatId, 'Model Sorhy-X already in use ✔️');
-//   };
-
-//   MODEL = process.env.MODEL_X;
-//   modelName = 'Sorhy-NLP X';
-
-//   bot.sendMessage(chatId, 'Switched to Sorhy-X 🦾');
-// });
-
- // Команда /help для помощи
 bot.onText(/\/help/, (msg) => {
   const chatId = msg.chat.id;
   bot.sendMessage(chatId, `
@@ -164,9 +99,6 @@ bot.onText(/\/help/, (msg) => {
     `.trim(), { parse_mode: 'HTML' });
 });
 
-
-
-// Ловим бота
 let botUsername = '';
 let botId = '';
 bot.getMe().then(botInfo => {
@@ -175,13 +107,11 @@ bot.getMe().then(botInfo => {
   console.log(`🤖 Бот @${botUsername} (${botId}) активен!`);
 });
 
-
-// Экранирование Markdown
 function escapeMarkdown(text) {
-  const parts = text.split(/(```[\s\S]*?```)/g); // включая переносы строк
+  const parts = text.split(/(```[\s\S]*?```)/g);
   return parts
     .map(part => {
-      if (part.startsWith('```')) return part; // это код — не трогаем
+      if (part.startsWith('```')) return part;
       return part
         .replace(/_/g, '\\_')
         .replace(/\#/g, '\\#')
@@ -206,7 +136,6 @@ function escapeMarkdown(text) {
 const userModels = new Map();
 
 bot.on('message', async (msg) => {
-
   const chatId = msg.chat.id;
   var userMessage = msg.text;
 
@@ -214,8 +143,6 @@ bot.on('message', async (msg) => {
   const userId = msg.from.id;
   var isDeveloper = false;
 
-  
-  // Проверяем упоминание бота в гпуппах
   const isGroup = msg.chat.type.endsWith('group');
   const botWasMentioned = msg.entities?.some(entity =>
     entity.type === 'mention' &&
@@ -227,34 +154,29 @@ bot.on('message', async (msg) => {
     userMessage = userMessage.replace(`@${botUsername}`, '').trim();
   };
 
-
-
   if (userId === developerId) {
     isDeveloper = true;
   };
 
-
-
-  // Обработка команд
   if (userMessage === '/start') {
     bot.sendMessage(chatId, 'Hi 👋 I am SorhyAI. How can I help you today?');
     return;
   };
-  if (userMessage === '/model_lite') {
+  if (userMessage.startsWith('/model_lite')) {
     if (userModels.get(chatId) === process.env.MODEL_LITE) {
       return bot.sendMessage(chatId, 'Model Sorhy-lite already in use ✔️');
     };
     userModels.set(chatId, process.env.MODEL_LITE);
     return bot.sendMessage(chatId, 'Switched to Sorhy-Lite 🫧');
   };
-  if (userMessage === '/model_pro') {
+  if (userMessage.startsWith('/model_pro')) {
     if (userModels.get(chatId) === process.env.MODEL_PRO) {
       return bot.sendMessage(chatId, 'Model Sorhy-Pro already in use ✔️');
     };
     userModels.set(chatId, process.env.MODEL_PRO);
     return bot.sendMessage(chatId, 'Switched to Sorhy-Pro 🔥')
   };
-  if (userMessage === '/model_x') {
+  if (userMessage.startsWith('/model_x')) {
     if (userModels.get(chatId) === process.env.MODEL_X) {
       return bot.sendMessage(chatId, 'Model Sorhy-X already on use ✔️');
     }
@@ -263,12 +185,6 @@ bot.on('message', async (msg) => {
   };
   const userModel = userModels.get(chatId) || process.env.MODEL_PRO 
 
-  
-  
-  
-  
-  
-  // Запрет загрузки файлов
   if (!msg.text) {
     console.log(`⚠️ ${msg.from.username || msg.from.first_name} попытался отправить файл:`, Object.keys(msg));
     return bot.sendMessage(chatId, 'I can read only text messages! 📄');
@@ -277,15 +193,12 @@ bot.on('message', async (msg) => {
   if (userMessage.startsWith('/')) return;
   let history = conversationContexts.get(chatId) || [];
 
-  // Собираем финальный массив для API
   const SYSTEM_PROMPT = generateSystemPrompt();
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
     ...history,
     { role: 'user', content: userMessage }
   ];
-
-  
 
   try {
     const response = await openai.chat.completions.create({
@@ -297,27 +210,23 @@ bot.on('message', async (msg) => {
       frequency_penalty: 0.8,
       max_tokens: 2000
     });
-    console.log(response);
+    console.log(response, response.choices.message);
     
     const reply = response.choices[0].message.content;
 
-    // Обновляем историю
     history.push(
       { role: 'user', content: userMessage },
       { role: 'assistant', content: reply }
     );
-    if (history.length > 10) history = history.slice(-10); // обрезаем историю
+    if (history.length > 10) history = history.slice(-10);
 
     conversationContexts.set(chatId, history);
 
     bot.sendMessage(chatId, escapeMarkdown(reply), {
       parse_mode: 'MarkdownV2',
-      reply_to_message_id: msg.message_id // ответим прямо на сообщение юзера
+      reply_to_message_id: msg.message_id
     });
 
-
-
-    // Стилизация логов
     function logMessage({ first_name, username, userMessage, reply, isDeveloper }) {
       const now = new Date();
       const time = now.toLocaleString('uz-UZ');
@@ -327,13 +236,12 @@ bot.on('message', async (msg) => {
       console.log(`${chalk.red('│')} ${chalk.green(`${first_name} [${username || 'unknown'}]:`)} ${chalk.white(userMessage)}`);
       console.log(`${chalk.red('│')} ${chalk.yellow(`Sorhy [${modelName}] ➤`)} ${chalk.white(reply)}`);
       console.log(chalk.red('└────────────────────────────────────────────\n'));
-      // Сохраняем логи если не разработчик
       if (!isDeveloper || !userId === 1265251643) {
-const logEntry = `
+        const logEntry = `
 ==============================================
-${time} \n
-${first_name} [${username || 'unknown'}]: ${userMessage}
-\nSorhy [${modelName}] ➤ ${reply}
+\${time} \n
+\${first_name} [\${username || 'unknown'}]: \${userMessage}
+\nSorhy [\${modelName}] ➤ \${reply}
 ==============================================
 \n\n
         `;
@@ -353,8 +261,6 @@ ${first_name} [${username || 'unknown'}]: ${userMessage}
     bot.sendMessage(chatId, "Sorhy is little bit tired 😥. Switch to another model or try again later.");
   }
 });
-
-
 
 import express from 'express';
 import path from 'path';
@@ -384,3 +290,4 @@ app.get('/admin/logs/', (req, res) => {
 app.listen(PORT);
 
 console.log('Сервер запущен ⚡');
+
