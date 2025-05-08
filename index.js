@@ -17,12 +17,12 @@ const MAX_HISTORY_LENGTH = 10;
 
 // Конфигурация OpenAI
 const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY2,
+  apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_TEST_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
 
 // Глобальные переменные для хранения состояния
 const conversationContexts = new Map();
