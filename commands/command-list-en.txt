@@ -1,0 +1,7 @@
+/start – Start the bot
+/reset – Reset the conversation history
+/model_lite – Switch to Sorhy-NLP Lite
+/model_pro – Switch to Sorhy-NLP Pro
+/model_x – Switch to Sorhy-NLP X
+/language – Change the language
+/help – Get help
