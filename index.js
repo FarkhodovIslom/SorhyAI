@@ -18,8 +18,6 @@ import {
 
 import {  
   PORT,
-  __filename,
-  __dirname,
   DEVELOPER_ID,
   MAX_HISTORY_LENGTH,
   MAX_HISTORY_CHARS,
@@ -30,6 +28,12 @@ import {
   USERS_FILE,
   MODEL_EMOJIS
 } from './config/config.js';
+
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 // Убеждаемся что папка data существует
@@ -658,7 +662,7 @@ app.get('/admin/logs/', (req, res) => {
     return res.status(401).send('Access denied! You are not Hanzo!');
   }
   
-  const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
+const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
   
   if (fs.existsSync(logPath)) {
     res.download(logPath, 'sorhy-log.txt');
