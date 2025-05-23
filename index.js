@@ -46,7 +46,7 @@ const openai = new OpenAI({
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_TEST_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
 
 // Структура данных пользователя в памяти
 class UserData {
