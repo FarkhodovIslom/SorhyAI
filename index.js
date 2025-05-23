@@ -46,7 +46,7 @@ const openai = new OpenAI({
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_TEST_API_KEY, { polling: true });
 
 // Структура данных пользователя в памяти
 class UserData {
@@ -320,8 +320,14 @@ function logMessage({ first_name, username, userMessage, reply, isDeveloper, mod
   console.log(chalk.red('└────────────────────────────────────────────\n'));
   
   // Сохраняем логи только для важных сообщений и не разработчика
-  if (!isDeveloper && (userMessage.length > 50 || reply.length > 100)) {
-    const logEntry = `${time} | ${first_name} [${username || 'unknown'}]: ${userMessage}\nSorhy [${modelName}] ➤ ${reply}\n${'='.repeat(80)}\n`;
+  if (!isDeveloper) {
+    const logEntry = `
+\n${'='.repeat(80)}\n
+${time} | 
+${first_name} [${username || 'unknown'}]: ${userMessage}
+\nSorhy [${modelName}] ➤ ${reply}
+\n${'='.repeat(80)}\n
+`;
     
     if (!fs.existsSync('logs')) {
       fs.mkdirSync('logs');

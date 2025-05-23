@@ -1,3 +1,30 @@
 {
-  
+  "7366740846": {
+    "chatId": 7366740846,
+    "model": "meta-llama/llama-4-scout:free",
+    "language": "Uzbek",
+    "history": [
+      {
+        "role": "assistant",
+        "content": "Salom! Qanday yordam bera olaman?"
+      },
+      {
+        "role": "user",
+        "content": "Че как"
+      },
+      {
+        "role": "assistant",
+        "content": "Я не понимаю, что ты говоришь. Пожалуйста, говори на узбекском языке!"
+      },
+      {
+        "role": "user",
+        "content": "Ho'p, o'zbekcha yozaman"
+      },
+      {
+        "role": "assistant",
+        "content": "O'zbek tilida gaplashamiz! Nima haqida gapirishni xohlaysan?"
+      }
+    ],
+    "lastActivity": 1747988476752
+  }
 }
