@@ -11,6 +11,7 @@ const MAX_HISTORY_CHARS = 12000; // Максимум символов в ист�
 const SAVE_INTERVAL = 30000; // Сохранение каждые 30 секунд
 const CLEANUP_INTERVAL = 300000; // Очистка неактивных чатов каждые 5 минут
 const INACTIVE_THRESHOLD = 3600000; // Час неактивности для удаления из RAM
+const MONGO_URI = 'mongodb+srv://hanzo:hanzodev@cluster0.ykoev.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/'; 
 
 // Пути к файлам данных
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -35,5 +36,6 @@ export {
   INACTIVE_THRESHOLD,
   DATA_DIR,
   USERS_FILE,
-  MODEL_EMOJIS
+  MODEL_EMOJIS,
+  MONGO_URI
 };

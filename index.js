@@ -21,23 +21,33 @@ import {
   DEVELOPER_ID,
   MAX_HISTORY_LENGTH,
   MAX_HISTORY_CHARS,
-  SAVE_INTERVAL,
-  CLEANUP_INTERVAL,
-  INACTIVE_THRESHOLD,
-  DATA_DIR,
-  USERS_FILE,
-  MODEL_EMOJIS
+  MODEL_EMOJIS,
+  MONGO_URI
 } from './config/config.js';
 
+// Импортируем наш новый менеджер пользователей
+import { UserDataManager } from './database/userManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-// Убеждаемся что папка data существует
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!process.env.OPENROUTER_API_KEY) {
+  console.error(chalk.red('❌ Missing environment variable: OPENROUTER_API_KEY'));
+  process.exit(1);
 }
+
+if (!process.env.TGBOT_API_KEY || !process.env.TGBOT_API_KEY) {
+  console.error(chalk.red('❌ Missing environment variable: TGBOT_API_KEY'));
+  process.exit(1);
+}
+
+if (!process.env.DEV_ACCESS_KEY) {
+  console.error(chalk.red('❌ Missing environment variable: DEV_ACCESS_KEY'));
+  process.exit(1);
+}
+
+
+
 
 // Инициализация OpenAI
 const openai = new OpenAI({
@@ -46,237 +56,48 @@ const openai = new OpenAI({
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_API_KEY2, { polling: true });
 
-// Структура данных пользователя в памяти
-class UserData {
-  constructor(chatId) {
-    this.chatId = chatId;
-    this.model = process.env.MODEL_PRO;
-    this.language = null;
-    this.history = [];
-    this.lastActivity = Date.now();
-    this.isDirty = false; // Флаг для отслеживания изменений
-  }
-
-  // Добавляем сообщение в историю с оптимизацией
-  addToHistory(userMsg, assistantMsg) {
-    this.history.push(
-      { role: 'user', content: userMsg },
-      { role: 'assistant', content: assistantMsg }
-    );
-    
-    // Обрезаем по количеству сообщений
-    if (this.history.length > MAX_HISTORY_LENGTH) {
-      this.history = this.history.slice(-MAX_HISTORY_LENGTH);
-    }
-    
-    // Обрезаем по размеру если слишком большая история
-    this.truncateHistoryBySize();
-    
-    this.lastActivity = Date.now();
-    this.isDirty = true;
-  }
-
-  // Обрезаем историю по размеру символов
-  truncateHistoryBySize() {
-    let totalChars = JSON.stringify(this.history).length;
-    
-    while (totalChars > MAX_HISTORY_CHARS && this.history.length > 2) {
-      this.history.splice(0, 2); // Удаляем первые 2 сообщения (пара user-assistant)
-      totalChars = JSON.stringify(this.history).length;
-    }
-  }
-
-  // Обновляем активность
-  updateActivity() {
-    this.lastActivity = Date.now();
-    this.isDirty = true;
-  }
-
-  // Проверяем неактивность
-  isInactive() {
-    return Date.now() - this.lastActivity > INACTIVE_THRESHOLD;
-  }
-
-  // Конвертируем в формат для сохранения (без лишних данных)
-  toJSON() {
-    return {
-      chatId: this.chatId,
-      model: this.model,
-      language: this.language,
-      history: this.history.slice(-5), // Сохраняем только последние 5 пар сообщений
-      lastActivity: this.lastActivity
-    };
-  }
-
-  // Создаем из сохраненных данных
-  static fromJSON(data) {
-    const user = new UserData(data.chatId);
-    user.model = data.model || process.env.MODEL_PRO;
-    user.language = data.language || null;
-    user.history = data.history || [];
-    user.lastActivity = data.lastActivity || Date.now();
-    return user;
-  }
-}
-
-// Менеджер данных пользователей
-class UserDataManager {
-  constructor() {
-    this.users = new Map(); // Активные пользователи в RAM
-    this.loadUsers();
-    this.startPeriodicSave();
-    this.startPeriodicCleanup();
-  }
-
-  // Загружаем пользователей из файла
-  loadUsers() {
-    try {
-      if (fs.existsSync(USERS_FILE)) {
-        const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-        console.log(chalk.green(`Загружено ${Object.keys(data).length} пользователей из файла`));
-        
-        // Загружаем только недавно активных пользователей в RAM
-        const now = Date.now();
-        let loadedCount = 0;
-        
-        for (const [chatId, userData] of Object.entries(data)) {
-          if (now - userData.lastActivity < INACTIVE_THRESHOLD) {
-            this.users.set(parseInt(chatId), UserData.fromJSON(userData));
-            loadedCount++;
-          }
-        }
-        
-        console.log(chalk.blue(`В RAM загружено ${loadedCount} активных пользователей`));
-      }
-    } catch (error) {
-      console.error(chalk.red('Ошибка загрузки пользователей:'), error);
-    }
-  }
-
-  // Сохраняем пользователей в файл
-  saveUsers() {
-    try {
-      let existingData = {};
-      
-      // Читаем существующие данные если файл есть
-      if (fs.existsSync(USERS_FILE)) {
-        existingData = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-      }
-
-      // Обновляем только измененных пользователей
-      let savedCount = 0;
-      for (const [chatId, userData] of this.users.entries()) {
-        if (userData.isDirty) {
-          existingData[chatId] = userData.toJSON();
-          userData.isDirty = false;
-          savedCount++;
-        }
-      }
-
-      if (savedCount > 0) {
-        fs.writeFileSync(USERS_FILE, JSON.stringify(existingData, null, 2));
-        console.log(chalk.green(`Сохранено ${savedCount} пользователей`));
-      }
-      
-      // Показываем статистику RAM
-      const ramUsage = process.memoryUsage();
-      console.log(chalk.cyan(`RAM: ${Math.round(ramUsage.heapUsed / 1024 / 1024)}MB, Активных чатов: ${this.users.size}`));
-      
-    } catch (error) {
-      console.error(chalk.red('Ошибка сохранения пользователей:'), error);
-    }
-  }
-
-  // Получаем пользователя (загружаем из файла если нужно)
-  getUser(chatId) {
-    if (!this.users.has(chatId)) {
-      // Пытаемся загрузить из файла
-      if (fs.existsSync(USERS_FILE)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-          if (data[chatId]) {
-            this.users.set(chatId, UserData.fromJSON(data[chatId]));
-            console.log(chalk.yellow(`Пользователь ${chatId} загружен из файла в RAM`));
-          } else {
-            this.users.set(chatId, new UserData(chatId));
-          }
-        } catch (error) {
-          this.users.set(chatId, new UserData(chatId));
-        }
-      } else {
-        this.users.set(chatId, new UserData(chatId));
-      }
-    }
-    
-    return this.users.get(chatId);
-  }
-
-  // Очищаем неактивных пользователей из RAM
-  cleanupInactiveUsers() {
-    const beforeSize = this.users.size;
-    let cleanedCount = 0;
-
-    for (const [chatId, userData] of this.users.entries()) {
-      if (userData.isInactive()) {
-        // Сохраняем перед удалением если есть изменения
-        if (userData.isDirty) {
-          try {
-            let existingData = {};
-            if (fs.existsSync(USERS_FILE)) {
-              existingData = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-            }
-            existingData[chatId] = userData.toJSON();
-            fs.writeFileSync(USERS_FILE, JSON.stringify(existingData, null, 2));
-          } catch (error) {
-            console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), error);
-          }
-        }
-        
-        this.users.delete(chatId);
-        cleanedCount++;
-      }
-    }
-
-    if (cleanedCount > 0) {
-      console.log(chalk.magenta(`Очищено из RAM: ${cleanedCount} неактивных пользователей (было ${beforeSize}, стало ${this.users.size})`));
-    }
-  }
-
-  // Периодическое сохранение
-  startPeriodicSave() {
-    setInterval(() => {
-      this.saveUsers();
-    }, SAVE_INTERVAL);
-  }
-
-  // Периодическая очистка
-  startPeriodicCleanup() {
-    setInterval(() => {
-      this.cleanupInactiveUsers();
-    }, CLEANUP_INTERVAL);
-  }
-
-  // Корректное завершение работы
-  shutdown() {
-    console.log(chalk.blue('Сохранение данных перед завершением...'));
-    this.saveUsers();
-    console.log(chalk.green('Данные сохранены!'));
-  }
-}
-
-// Инициализируем менеджер данных
-const userManager = new UserDataManager();
+// Инициализация менеджера пользователей с MongoDB
+const userManager = new UserDataManager(
+  process.env.MONGODB_URI || MONGO_URI,
+  process.env.DB_NAME || 'sorhy'
+);
 
 // Переменные бота
 let botUsername = '';
 let botId = '';
 const version = process.env.VERSION;
 
+/**
+ * Инициализация приложения
+ */
+async function initializeApp() {
+  console.log(chalk.blue('🚀 Запуск Telegram бота...'));
+  
+  // Подключаемся к MongoDB
+  const mongoConnected = await userManager.connect();
+  if (!mongoConnected) {
+    console.error(chalk.red('❌ Не удалось подключиться к MongoDB. Бот может работать нестабильно.'));
+    // Можем продолжить работу без БД, но с ограниченным функционалом
+  }
+  
+  // Инициализируем бота
+  try {
+    const botInfo = await bot.getMe();
+    botUsername = botInfo.username;
+    botId = botInfo.id;
+    console.log(chalk.green(`🤖 Бот @${botUsername} (${botId}) активен!`));
+  } catch (error) {
+    console.error(chalk.red('❌ Ошибка инициализации бота:'), error);
+    process.exit(1);
+  }
+}
+
+
 
 /**
- * Экранирует специальные символы для Markdown - БЕЗ ИЗМЕНЕНИЙ
+ * Экранирует специальные символы для Markdown
  */
 function escapeMarkdown(text) {
   const parts = text.split(/(```[\s\S]*?```)/g);
@@ -299,18 +120,23 @@ function escapeMarkdown(text) {
         .replace(/\{/g, '\\{')
         .replace(/\}/g, '\\}')
         .replace(/\./g, '\\.')
-        .replace(/!/g, '\\!');
+        .replace(/!/g, '\\!')
+        .replace(/`/g, '\\`') // Escape backticks
+        .replace(/\[/g, '\\[') // Escape left square bracket again to fix MarkdownV2 issues
+        .replace(/\]/g, '\\]'); // Escape right square bracket again
     })
     .join('');
 }
 
+
+
 /**
- * Логирование - ОПТИМИЗИРОВАНО для меньшего использования RAM
+ * Логирование сообщений
  */
 function logMessage({ first_name, username, userMessage, reply, isDeveloper, modelName = 'Unknown' }) {
   const now = new Date();
   const tzOffsetMs = 5 * 60 * 60 * 1000;
-  const localTime = new Date(now.getTime() + tzOffsetMs)
+  const localTime = new Date(now.getTime() + tzOffsetMs);
   const time = localTime.toLocaleString('uz-UZ');
 
   console.log(chalk.red('┌────────────────────────────────────────────'));
@@ -319,7 +145,7 @@ function logMessage({ first_name, username, userMessage, reply, isDeveloper, mod
   console.log(`${chalk.red('│')} ${chalk.yellow(`Sorhy [${modelName}] ➤`)} ${chalk.white(reply.slice(0, 100))}${reply.length > 100 ? '...' : ''}`);
   console.log(chalk.red('└────────────────────────────────────────────\n'));
   
-  // Сохраняем логи только для важных сообщений и не разработчика
+  // Асинхронное логирование в файл для не-разработчиков
   if (!isDeveloper) {
     const logEntry = `
 \n${'='.repeat(80)}\n
@@ -333,7 +159,6 @@ ${first_name} [${username || 'unknown'}]: ${userMessage}
       fs.mkdirSync('logs');
     }
     
-    // Асинхронная запись чтобы не блокировать
     fs.appendFile('logs/sorhy-log.txt', logEntry, (err) => {
       if (err) console.error('Ошибка записи лога:', err);
     });
@@ -341,15 +166,7 @@ ${first_name} [${username || 'unknown'}]: ${userMessage}
 }
 
 /**
- * Получение модели пользователя - ОПТИМИЗИРОВАНО
- */
-function getUserModel(chatId) {
-  const user = userManager.getUser(chatId);
-  return user.model;
-}
-
-/**
- * Проверка нужности ответа в группе - БЕЗ ИЗМЕНЕНИЙ
+ * Проверка нужности ответа в группе
  */
 function shouldRespondInGroup(msg) {
   const isGroup = msg.chat.type.endsWith('group');
@@ -357,7 +174,7 @@ function shouldRespondInGroup(msg) {
   
   const botWasMentioned = msg.entities?.some(entity =>
     entity.type === 'mention' &&
-    msg.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`
+    msg.text && msg.text.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`
   );
   const isReplyToBot = msg.reply_to_message?.from?.id === botId;
   
@@ -365,7 +182,7 @@ function shouldRespondInGroup(msg) {
 }
 
 /**
- * Получение текста сообщения - БЕЗ ИЗМЕНЕНИЙ
+ * Получение текста сообщения
  */
 function getMessageText(msg) {
   let userMessage = msg.text;
@@ -383,62 +200,65 @@ function getMessageText(msg) {
 }
 
 /**
- * Обработка команд - ОПТИМИЗИРОВАНО
+ * Обработка команд
  */
-function handleCommand(chatId, command) {
-  const user = userManager.getUser(chatId);
+async function handleCommand(chatId, command) {
+  const user = await userManager.getUser(chatId);
   
   switch (command) {
     case '/start':
       if (!user.language) {
-        bot.sendMessage(
+        await bot.sendMessage(
           chatId, 
           'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:',
           createLanguageKeyboard()
         );
       } else {
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
       }
       return true;
     
     case '/reset':
       user.history = [];
-      user.isDirty = true;
-      bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'resetHistory'));
+      await userManager.saveUser(chatId, user);
+      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'resetHistory'));
       return true;
     
     case '/model_lite':
       if (user.model === process.env.MODEL_LITE) {
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'lite' }));
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'lite' }));
       } else {
         user.model = process.env.MODEL_LITE;
-        user.isDirty = true;
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Lite', emoji: MODEL_EMOJIS.lite }));
+        user.updateActivity();
+        await userManager.saveUser(chatId, user);
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Lite', emoji: MODEL_EMOJIS.lite }));
       }
       return true;
     
     case '/model_pro':
       if (user.model === process.env.MODEL_PRO) {
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'pro' }));
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'pro' }));
       } else {
         user.model = process.env.MODEL_PRO;
-        user.isDirty = true;
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Pro', emoji: MODEL_EMOJIS.pro }));
+        user.updateActivity();
+        await userManager.saveUser(chatId, user);
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Pro', emoji: MODEL_EMOJIS.pro }));
       }
       return true;
     
     case '/model_x':
       if (user.model === process.env.MODEL_X) {
-        bot.sendMessage(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'x' });
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'x' }));
       } else {
         user.model = process.env.MODEL_X;
-        user.isDirty = true;
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'X', emoji: MODEL_EMOJIS.x }));
+        user.updateActivity();
+        await userManager.saveUser(chatId, user);
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'X', emoji: MODEL_EMOJIS.x }));
       }
       return true;
     
     case '/language':
-      bot.sendMessage(
+      await bot.sendMessage(
         chatId,
         getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage'),
         createLanguageKeyboard()
@@ -446,25 +266,53 @@ function handleCommand(chatId, command) {
       return true;
     
     case '/help':
-      bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage'), { parse_mode: 'HTML' });
+      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage'), { parse_mode: 'HTML' });
+      return true;
+      
+    case '/stats':
+      // Команда только для разработчика
+      if (chatId === DEVELOPER_ID) {
+        const stats = await userManager.getStats();
+        const memUsage = process.memoryUsage();
+        const uptime = Math.floor(process.uptime() / 60); // в минутах
+        
+        const statsMessage = `
+📊 <b>Статистика бота:</b>
+
+👥 Пользователи:
+• Всего в БД: <code>${stats.totalUsers}</code>
+• Активных (24ч): <code>${stats.activeUsers}</code>
+• В кэше: <code>${stats.cachedUsers}</code>
+
+💻 Система:
+• RAM: <code>${Math.round(memUsage.heapUsed / 1024 / 1024)}MB</code>
+• Uptime: <code>${uptime} мин</code>
+• MongoDB: <code>${stats.isConnected ? '✅ Подключена' : '❌ Отключена'}</code>
+        `;
+        
+        await bot.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' });
+      }
       return true;
       
     default:
-      if (command.startsWith('/')) return true;
+      if (command.startsWith('/')) {
+        await bot.sendMessage(chatId, 'Unknown command. Use /help to see available commands.');
+        return true;
+      }
       return false;
   }
 }
 
 /**
- * Генерация AI ответа - ОПТИМИЗИРОВАНО
+ * Генерация AI ответа
  */
 async function generateAIResponse(chatId, userMessage) {
-  const user = userManager.getUser(chatId);
+  const user = await userManager.getUser(chatId);
   const SYSTEM_PROMPT = generateSystemPrompt(user.language || 'en', version);
   
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...user.history,
+    ...user.history.map(h => ({ role: h.role, content: h.content })), // Убираем timestamp для API
     { role: 'user', content: userMessage }
   ];
 
@@ -480,17 +328,22 @@ async function generateAIResponse(chatId, userMessage) {
   
   const reply = response.choices[0].message.content;
   
-  // Добавляем в историю через метод класса
-  user.addToHistory(userMessage, reply);
+  // Добавляем в историю
+  user.addToHistory(userMessage, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
+  
+  // Асинхронно сохраняем пользователя (не блокируем ответ)
+  userManager.saveUser(chatId, user).catch(err => {
+    console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), err);
+  });
   
   return reply;
 }
 
 /**
- * Генерация AI ответа с изображением - ОПТИМИЗИРОВАНО
+ * Генерация AI ответа с изображением
  */
 async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
-  const user = userManager.getUser(chatId);
+  const user = await userManager.getUser(chatId);
   const SYSTEM_PROMPT = generateSystemPrompt(user.language || 'en', version);
   
   const imageMessage = {
@@ -502,7 +355,7 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...user.history,
+    ...user.history.map(h => ({ role: h.role, content: h.content })),
     { 
       role: 'user', 
       content: [
@@ -524,34 +377,43 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   
   const reply = response.choices[0].message.content;
   
-  // Сохраняем в историю без изображения (экономим RAM)
-  user.addToHistory(`[IMAGE] ${userMessage}`, reply);
+  // Сохраняем в историю без изображения (экономим память)
+  user.addToHistory(`[IMAGE] ${userMessage}`, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
+  
+  // Асинхронно сохраняем
+  userManager.saveUser(chatId, user).catch(err => {
+    console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), err);
+  });
   
   return reply;
 }
 
 /**
- * Остальные функции БЕЗ ИЗМЕНЕНИЙ
+ * Получение base64 изображения
  */
 async function getImageBase64(fileInfo) {
-  const fileLink = await bot.getFileLink(fileInfo.file_id);
-  const response = await fetch(fileLink);
-  const buffer = await response.arrayBuffer();
-  return Buffer.from(buffer).toString('base64');
+  try {
+    const fileLink = await bot.getFileLink(fileInfo.file_id);
+    const response = await fetch(fileLink);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+    }
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
+  } catch (error) {
+    console.error('Ошибка при получении base64 изображения:', error);
+    throw error;
+  }
 }
 
+/**
+ * Проверка поддержки изображений моделью
+ */
 function modelSupportsImages(modelName) {
   return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
 }
 
-// Инициализация бота
-bot.getMe().then(botInfo => {
-  botUsername = botInfo.username;
-  botId = botInfo.id;
-  console.log(`🤖 Бот @${botUsername} (${botId}) активен!`);
-});
-
-// Обработчик callback query - ОПТИМИЗИРОВАНО
+// Обработчик callback query
 bot.on('callback_query', async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
@@ -561,35 +423,37 @@ bot.on('callback_query', async (query) => {
     const language = LANGUAGES[langCode];
     
     if (language) {
-      const user = userManager.getUser(chatId);
+      const user = await userManager.getUser(chatId);
       user.language = language;
       user.updateActivity();
+      await userManager.saveUser(chatId, user);
       
-      bot.answerCallbackQuery(query.id);
-      bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'languageChanged'));
+      await bot.answerCallbackQuery(query.id);
+      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'languageChanged'));
       
       if (user.history.length === 0) {
-        bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
+        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
       }
     }
   }
 });
 
-// Основной обработчик сообщений - ОПТИМИЗИРОВАНО
+// Основной обработчик сообщений
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const isDeveloper = userId === DEVELOPER_ID;
   
-  const user = userManager.getUser(chatId);
+  const user = await userManager.getUser(chatId);
   
   // Проверяем язык
   if (!user.language && (!msg.text || msg.text !== '/start')) {
-    return bot.sendMessage(
+    await bot.sendMessage(
       chatId, 
       'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:',
       createLanguageKeyboard()
     );
+    return; // Return after sending language selection
   }
   
   if (!shouldRespondInGroup(msg)) return;
@@ -617,7 +481,7 @@ bot.on('message', async (msg) => {
     }
   } else if (msg.text) {
     userMessage = getMessageText(msg);
-    if (handleCommand(chatId, userMessage)) return;
+    if (await handleCommand(chatId, userMessage)) return;
   } else {
     return bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'onlyTextAndImages'));
   }
@@ -634,7 +498,7 @@ bot.on('message', async (msg) => {
       reply = await generateAIResponse(chatId, userMessage);
     }
     
-    bot.sendMessage(chatId, escapeMarkdown(reply), {
+    await bot.sendMessage(chatId, escapeMarkdown(reply), {
       parse_mode: 'MarkdownV2',
       reply_to_message_id: msg.message_id
     });
@@ -650,23 +514,23 @@ bot.on('message', async (msg) => {
     
   } catch (err) {
     console.error(err);
-    bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
+    await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
   }
 });
 
-// Express сервер - БЕЗ ИЗМЕНЕНИЙ
+// Express сервер
 const app = express();
 
 app.get('/ping', (req, res) => res.send('pong'));
 
 app.get('/admin/logs/', (req, res) => {
-  const accessKey = req.query.key;
+  const accessKey = req.headers['x-access-key'];
   
   if (accessKey !== process.env.DEV_ACCESS_KEY) {
     return res.status(401).send('Access denied! You are not Hanzo!');
   }
   
-const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
+  const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
   
   if (fs.existsSync(logPath)) {
     res.download(logPath, 'sorhy-log.txt');
@@ -675,36 +539,61 @@ const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
   }
 });
 
-// Добавляем эндпоинт для статистики пользователей
-app.get('/admin/stats/', (req, res) => {
-  const accessKey = req.query.key;
+app.get('/admin/stats/', async (req, res) => {
+  const accessKey = req.headers['x-access-key'];
   
   if (accessKey !== process.env.DEV_ACCESS_KEY) {
     return res.status(401).send('Access denied!');
   }
   
-  const stats = {
-    activeUsersInRAM: userManager.users.size,
-    memoryUsage: process.memoryUsage(),
-    uptime: process.uptime()
-  };
-  
-  res.json(stats);
+  try {
+    const stats = await userManager.getStats();
+    const memoryUsage = process.memoryUsage();
+    
+    const fullStats = {
+      database: {
+        totalUsers: stats.totalUsers,
+        activeUsers: stats.activeUsers,
+        cachedUsers: stats.cachedUsers,
+        isConnected: stats.isConnected
+      },
+      system: {
+        memoryUsage: {
+          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
+          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
+          external: Math.round(memoryUsage.external / 1024 / 1024) + 'MB'
+        },
+        uptime: Math.floor(process.uptime()) + ' секунд'
+      }
+    };
+    
+    res.json(fullStats);
+  } catch (error) {
+    console.error('Ошибка получения статистики:', error);
+    res.status(500).json({ error: 'Ошибка получения статистики' });
+  }
 });
 
+// Запуск сервера
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT} ⚡`);
+  console.log(chalk.green(`⚡ Сервер запущен на порту ${PORT}`));
 });
 
-// Корректное завершение работы
-process.on('SIGINT', () => {
-  console.log(chalk.yellow('\nПолучен сигнал завершения...'));
-  userManager.shutdown();
+// Корректное завершение работы с отключением от MongoDB
+process.on('SIGINT', async () => {
+  console.log(chalk.yellow('\n🛑 Получен сигнал завершения SIGINT...'));
+  await userManager.disconnect();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
-  console.log(chalk.yellow('\nПолучен сигнал SIGTERM...'));
-  userManager.shutdown();
+process.on('SIGTERM', async () => {
+  console.log(chalk.yellow('\n🛑 Получен сигнал завершения SIGTERM...'));
+  await userManager.disconnect();
   process.exit(0);
+});
+
+// Запускаем инициализацию
+initializeApp().catch(error => {
+  console.error(chalk.red('❌ Критическая ошибка запуска:'), error);
+  process.exit(1);
 });
