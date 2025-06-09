@@ -56,7 +56,7 @@ const openai = new OpenAI({
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_API_KEY2, { polling: true });
 
 // Инициализация менеджера пользователей с MongoDB
 const userManager = new UserDataManager(
@@ -163,6 +163,30 @@ ${first_name} [${username || 'unknown'}]: ${userMessage}
       if (err) console.error('Ошибка записи лога:', err);
     });
   }
+}
+function logErrorMessage({error_message, first_name, username, userMessage, reply, modelName = "Unknown"}) {
+  const now = new Date();
+  const tzOffsetMs = 5 * 60 * 60 * 1000;
+  const localTime = new Date(now.getTime() + tzOffsetMs);
+  const time = localTime.toLocaleString('uz-UZ');
+
+  const logEntry = `
+  ERROR!
+\n${'–'.repeat(50)}\n
+${time} | 
+${first_name} [${username || 'unknown'}]: ${userMessage}
+\nSorhy [${modelName}] ➤ ${reply}
+\nError: ${error_message}
+\n${'–'.repeat(50)}\n
+`;
+    
+    if (!fs.existsSync('logs')) {
+      fs.mkdirSync('logs');
+    }
+    
+    fs.appendFile('logs/sorhy-log.txt', logEntry, (err) => {
+      if (err) console.error('Ошибка записи лога:', err);
+    });
 }
 
 /**
@@ -489,6 +513,8 @@ bot.on('message', async (msg) => {
   try {
     // Обновляем активность пользователя
     user.updateActivity();
+
+    await bot.sendChatAction(chatId, 'typing');
     
     let reply;
     
@@ -497,7 +523,6 @@ bot.on('message', async (msg) => {
     } else {
       reply = await generateAIResponse(chatId, userMessage);
     }
-    
     await bot.sendMessage(chatId, escapeMarkdown(reply), {
       parse_mode: 'MarkdownV2',
       reply_to_message_id: msg.message_id
@@ -514,6 +539,13 @@ bot.on('message', async (msg) => {
     
   } catch (err) {
     console.error(err);
+    logErrorMessage({
+      error_message: err,
+      first_name: msg.from.first_name,
+      username: msg.from.username,
+      userMessage: imageData ? `[IMAGE] ${userMessage}` : userMessage,
+      reply
+    })
     await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
   }
 });
@@ -524,14 +556,14 @@ const app = express();
 app.get('/ping', (req, res) => res.send('pong'));
 
 app.get('/admin/logs/', (req, res) => {
-  const accessKey = req.headers['x-access-key'];
-  
+  const accessKey = req.query.key;
+
   if (accessKey !== process.env.DEV_ACCESS_KEY) {
     return res.status(401).send('Access denied! You are not Hanzo!');
   }
-  
+
   const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
-  
+
   if (fs.existsSync(logPath)) {
     res.download(logPath, 'sorhy-log.txt');
   } else {
