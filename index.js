@@ -56,7 +56,7 @@ const openai = new OpenAI({
 });
 
 // Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_API_KEY2, { polling: true });
+const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
 
 // Инициализация менеджера пользователей с MongoDB
 const userManager = new UserDataManager(
