@@ -20,14 +20,15 @@ export const localization = {
       
       /start – <b>🔅 Launch the bot </b>
       /reset – 🔄 Reset conversation history
-      /model_lite – 🫧 Switch to Sorhy-NLP Lite
-      /model_pro – 🔥 Switch to Sorhy-NLP Pro
-      /model_x – 🦾 Switch to Sorhy-NLP X
+      /model_lite – 🫧 Switch to Sorhy Lite
+      /model_pro – 🔥 Switch to Sorhy Pro
+      /model_x – 🦾 Switch to Sorhy X
       /language – 🌐 Change language
       /help – ❓ Get help 
       
       Ask me anything, and I will try to help as I can!
-    `
+    `,
+    unknownCommand: 'Unknown command. Use /help to see available commands.'
   },
   RUS: {
     startMessage: 'Привет 👋 Я SorhyAI. Чем могу помочь?',
@@ -44,14 +45,15 @@ export const localization = {
       
       /start – <b>🔅 Запустить бота </b>
       /reset – 🔄 Сбросить историю разговора
-      /model_lite – 🫧 Переключиться на Sorhy-NLP Lite
-      /model_pro – 🔥 Переключиться на Sorhy-NLP Pro
-      /model_x – 🦾 Переключиться на Sorhy-NLP X
+      /model_lite – 🫧 Переключиться на Sorhy Lite
+      /model_pro – 🔥 Переключиться на Sorhy Pro
+      /model_x – 🦾 Переключиться на Sorhy X
       /language – 🌐 Изменить язык
       /help – ❓ Получить помощь 
       
       Спрашивайте меня о чем угодно, и я постараюсь помочь!
-    `
+    `,
+    unknownCommand: 'Неизвестная команда. Используйте /help для просмотра доступных команд.'
   },
   UZB: {
     startMessage: 'Salom 👋 Men SorhyAI. Sizga qanday yordam bera olaman?',
@@ -68,14 +70,15 @@ export const localization = {
       
       /start – <b>🔅 Botni ishga tushirish </b>
       /reset – 🔄 Suhbat tarixini tozalash
-      /model_lite – 🫧 Sorhy-NLP Lite ga o'tish
-      /model_pro – 🔥 Sorhy-NLP Pro ga o'tish
-      /model_x – 🦾 Sorhy-NLP X ga o'tish
+      /model_lite – 🫧 Sorhy Lite ga o'tish
+      /model_pro – 🔥 Sorhy Pro ga o'tish
+      /model_x – 🦾 Sorhy X ga o'tish
       /language – 🌐 Tilni o'zgartirish
       /help – ❓ Yordam olish 
       
       Mendan xohlagan narsangizni so'rang, va men qo\'limdan kelgancha yordam beraman!
-    `
+    `,
+    unknownCommand: 'Nomalum komanda. Mavjud komandalarni ko\'rish uchun /help dan foydalaning'
   }
 };
 

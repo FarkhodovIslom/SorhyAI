@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import chalk from 'chalk';
 import fs from 'fs';
 import express from 'express';
-import path from 'path';
+import path, { join } from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { generateSystemPrompt } from './prompt/systemPrompt.js';
@@ -22,11 +22,15 @@ import {
   MAX_HISTORY_LENGTH,
   MAX_HISTORY_CHARS,
   MODEL_EMOJIS,
-  MONGO_URI
+  MONGO_URI,
+  MODEL_TEMP,
+  MODEL_TOP_P
 } from './config/config.js';
 
 // Импортируем наш новый менеджер пользователей
 import { UserDataManager } from './database/userManager.js';
+// Импортируем новый command handler
+import { CommandHandler } from './handlers/commandHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,9 +50,6 @@ if (!process.env.DEV_ACCESS_KEY) {
   process.exit(1);
 }
 
-
-
-
 // Инициализация OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -63,6 +64,9 @@ const userManager = new UserDataManager(
   process.env.MONGODB_URI || MONGO_URI,
   process.env.DB_NAME || 'sorhy'
 );
+
+// Инициализация command handler
+const commandHandler = new CommandHandler(bot, userManager);
 
 // Переменные бота
 let botUsername = '';
@@ -94,41 +98,29 @@ async function initializeApp() {
   }
 }
 
-
-
 /**
  * Экранирует специальные символы для Markdown
  */
 function escapeMarkdown(text) {
-  const parts = text.split(/(```[\s\S]*?```)/g);
-  return parts
-    .map(part => {
-      if (part.startsWith('```')) return part;
-      return part
-        .replace(/_/g, '\\_')
-        .replace(/\#/g, '\\#')
-        .replace(/\[/g, '\\[')
-        .replace(/\]/g, '\\]')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)')
-        .replace(/~/g, '\\~')
-        .replace(/\-/g, '\\-')
-        .replace(/>/g, '\\>')
-        .replace(/\+/g, '\\+')
-        .replace(/=/g, '\\=')
-        .replace(/\|/g, '\\|')
-        .replace(/\{/g, '\\{')
-        .replace(/\}/g, '\\}')
-        .replace(/\./g, '\\.')
-        .replace(/!/g, '\\!')
-        .replace(/`/g, '\\`') // Escape backticks
-        .replace(/\[/g, '\\[') // Escape left square bracket again to fix MarkdownV2 issues
-        .replace(/\]/g, '\\]'); // Escape right square bracket again
-    })
-    .join('');
+  // Если текст содержит сложные структуры, лучше отправить как plain text
+  const hasComplexMarkdown = /[*_`\[\]()~>#+\-=|{}\.!\\]/g.test(text);
+  
+  if (!hasComplexMarkdown) {
+    return text;
+  }
+  
+  // Простое экранирование только критичных символов
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/_/g, '\\_')
+    .replace(/\*/g, '\\*')
+    .replace(/~/g, '\\~')
+    .replace(/`/g, '\\`');
 }
-
-
 
 /**
  * Логирование сообщений
@@ -163,30 +155,6 @@ ${first_name} [${username || 'unknown'}]: ${userMessage}
       if (err) console.error('Ошибка записи лога:', err);
     });
   }
-}
-function logErrorMessage({error_message, first_name, username, userMessage, reply, modelName = "Unknown"}) {
-  const now = new Date();
-  const tzOffsetMs = 5 * 60 * 60 * 1000;
-  const localTime = new Date(now.getTime() + tzOffsetMs);
-  const time = localTime.toLocaleString('uz-UZ');
-
-  const logEntry = `
-  ERROR!
-\n${'–'.repeat(50)}\n
-${time} | 
-${first_name} [${username || 'unknown'}]: ${userMessage}
-\nSorhy [${modelName}] ➤ ${reply}
-\nError: ${error_message}
-\n${'–'.repeat(50)}\n
-`;
-    
-    if (!fs.existsSync('logs')) {
-      fs.mkdirSync('logs');
-    }
-    
-    fs.appendFile('logs/sorhy-log.txt', logEntry, (err) => {
-      if (err) console.error('Ошибка записи лога:', err);
-    });
 }
 
 /**
@@ -224,110 +192,6 @@ function getMessageText(msg) {
 }
 
 /**
- * Обработка команд
- */
-async function handleCommand(chatId, command) {
-  const user = await userManager.getUser(chatId);
-  
-  switch (command) {
-    case '/start':
-      if (!user.language) {
-        await bot.sendMessage(
-          chatId, 
-          'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:',
-          createLanguageKeyboard()
-        );
-      } else {
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
-      }
-      return true;
-    
-    case '/reset':
-      user.history = [];
-      await userManager.saveUser(chatId, user);
-      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'resetHistory'));
-      return true;
-    
-    case '/model_lite':
-      if (user.model === process.env.MODEL_LITE) {
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'lite' }));
-      } else {
-        user.model = process.env.MODEL_LITE;
-        user.updateActivity();
-        await userManager.saveUser(chatId, user);
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Lite', emoji: MODEL_EMOJIS.lite }));
-      }
-      return true;
-    
-    case '/model_pro':
-      if (user.model === process.env.MODEL_PRO) {
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'pro' }));
-      } else {
-        user.model = process.env.MODEL_PRO;
-        user.updateActivity();
-        await userManager.saveUser(chatId, user);
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'Pro', emoji: MODEL_EMOJIS.pro }));
-      }
-      return true;
-    
-    case '/model_x':
-      if (user.model === process.env.MODEL_X) {
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { model: 'x' }));
-      } else {
-        user.model = process.env.MODEL_X;
-        user.updateActivity();
-        await userManager.saveUser(chatId, user);
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { model: 'X', emoji: MODEL_EMOJIS.x }));
-      }
-      return true;
-    
-    case '/language':
-      await bot.sendMessage(
-        chatId,
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage'),
-        createLanguageKeyboard()
-      );
-      return true;
-    
-    case '/help':
-      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage'), { parse_mode: 'HTML' });
-      return true;
-      
-    case '/stats':
-      // Команда только для разработчика
-      if (chatId === DEVELOPER_ID) {
-        const stats = await userManager.getStats();
-        const memUsage = process.memoryUsage();
-        const uptime = Math.floor(process.uptime() / 60); // в минутах
-        
-        const statsMessage = `
-📊 <b>Статистика бота:</b>
-
-👥 Пользователи:
-• Всего в БД: <code>${stats.totalUsers}</code>
-• Активных (24ч): <code>${stats.activeUsers}</code>
-• В кэше: <code>${stats.cachedUsers}</code>
-
-💻 Система:
-• RAM: <code>${Math.round(memUsage.heapUsed / 1024 / 1024)}MB</code>
-• Uptime: <code>${uptime} мин</code>
-• MongoDB: <code>${stats.isConnected ? '✅ Подключена' : '❌ Отключена'}</code>
-        `;
-        
-        await bot.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' });
-      }
-      return true;
-      
-    default:
-      if (command.startsWith('/')) {
-        await bot.sendMessage(chatId, 'Unknown command. Use /help to see available commands.');
-        return true;
-      }
-      return false;
-  }
-}
-
-/**
  * Генерация AI ответа
  */
 async function generateAIResponse(chatId, userMessage) {
@@ -336,18 +200,16 @@ async function generateAIResponse(chatId, userMessage) {
   
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...user.history.map(h => ({ role: h.role, content: h.content })), // Убираем timestamp для API
+    ...user.history.map(h => ({ role: h.role, content: h.content })),
     { role: 'user', content: userMessage }
   ];
 
   const response = await openai.chat.completions.create({
     model: user.model,
     messages,
-    temperature: 0.8,
-    top_p: 0.8,
-    presence_penalty: 0.8,
-    frequency_penalty: 0.8,
-    max_tokens: 2000
+    temperature: MODEL_TEMP,
+    top_p: MODEL_TOP_P,
+    max_tokens: 1000
   });
   
   const reply = response.choices[0].message.content;
@@ -355,7 +217,7 @@ async function generateAIResponse(chatId, userMessage) {
   // Добавляем в историю
   user.addToHistory(userMessage, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
   
-  // Асинхронно сохраняем пользователя (не блокируем ответ)
+  // Асинхронно сохраняем пользователя
   userManager.saveUser(chatId, user).catch(err => {
     console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), err);
   });
@@ -392,16 +254,14 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   const response = await openai.chat.completions.create({
     model: user.model,
     messages,
-    temperature: 0.8,
-    top_p: 0.8,
-    presence_penalty: 0.8,
-    frequency_penalty: 0.8,
-    max_tokens: 2000
+    temperature: MODEL_TEMP,
+    top_p: MODEL_TOP_P,
+    max_tokens: 1000
   });
   
   const reply = response.choices[0].message.content;
   
-  // Сохраняем в историю без изображения (экономим память)
+  // Сохраняем в историю без изображения
   user.addToHistory(`[IMAGE] ${userMessage}`, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
   
   // Асинхронно сохраняем
@@ -477,7 +337,7 @@ bot.on('message', async (msg) => {
       'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:',
       createLanguageKeyboard()
     );
-    return; // Return after sending language selection
+    return;
   }
   
   if (!shouldRespondInGroup(msg)) return;
@@ -505,7 +365,11 @@ bot.on('message', async (msg) => {
     }
   } else if (msg.text) {
     userMessage = getMessageText(msg);
-    if (await handleCommand(chatId, userMessage)) return;
+    
+    // ВОТ ТУТ ИСПОЛЬЗУЕМ НАШ НОВЫЙ COMMAND HANDLER!
+    if (await commandHandler.handleCommand(chatId, userMessage)) {
+      return;
+    }
   } else {
     return bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'onlyTextAndImages'));
   }
@@ -523,8 +387,9 @@ bot.on('message', async (msg) => {
     } else {
       reply = await generateAIResponse(chatId, userMessage);
     }
+    
     await bot.sendMessage(chatId, escapeMarkdown(reply), {
-      parse_mode: 'MarkdownV2',
+      parse_mode: 'Markdown',
       reply_to_message_id: msg.message_id
     });
     
@@ -539,19 +404,16 @@ bot.on('message', async (msg) => {
     
   } catch (err) {
     console.error(err);
-    logErrorMessage({
-      error_message: err,
-      first_name: msg.from.first_name,
-      username: msg.from.username,
-      userMessage: imageData ? `[IMAGE] ${userMessage}` : userMessage,
-      reply
-    })
     await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
   }
 });
 
 // Express сервер
 const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'))
+app.use(express.static('public'));
 
 app.get('/ping', (req, res) => res.send('pong'));
 

@@ -344,7 +344,7 @@ export class UserDataManager {
   /**
    * Корректное завершение работы
    */
-  async shutdown() {
+  async disconnect() {
     console.log(chalk.yellow('🔄 Завершение работы UserDataManager...'));
     
     // Останавливаем таймеры
