@@ -40,7 +40,7 @@ if (!process.env.OPENROUTER_API_KEY) {
   process.exit(1);
 }
 
-if (!process.env.TGBOT_API_KEY || !process.env.TGBOT_API_KEY) {
+if (!process.env.TGBOT_API_KEY || !process.env.TGBOT_API_KEY2) {
   console.error(chalk.red('❌ Missing environment variable: TGBOT_API_KEY'));
   process.exit(1);
 }
