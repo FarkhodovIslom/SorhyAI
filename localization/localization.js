@@ -12,7 +12,7 @@ export const localization = {
     resetHistory: 'Chat history cleared ✅',
     modelAlreadyInUse: 'Model Sorhy-{model} already in use ✔️',
     modelSwitched: 'Switched to Sorhy-{model} {emoji}',
-    imageNotSupported: 'Image processing is available only with Sorhy-Pro or Sorhy-X models. Please switch your model or send text only.',
+    imageNotSupported: 'Image processing is available only with Sorhy-X models. Please switch your model or send text only.',
     onlyTextAndImages: 'I can only process text messages and images! 📄🖼️',
     errorMessage: 'Sorhy is little bit tired 😥. Switch to another model or try again later.',
     helpMessage: `
@@ -37,7 +37,7 @@ export const localization = {
     resetHistory: 'История чата очищена ✅',
     modelAlreadyInUse: 'Модель Sorhy-{model} уже используется ✔️',
     modelSwitched: 'Переключено на Sorhy-{model} {emoji}',
-    imageNotSupported: 'Обработка изображений доступна только с моделями Sorhy-Pro или Sorhy-X. Пожалуйста, переключите модель или отправьте только текст.',
+    imageNotSupported: 'Обработка изображений доступна только с моделями Sorhy-X. Пожалуйста, переключите модель или отправьте только текст.',
     onlyTextAndImages: 'Я могу обрабатывать только текстовые сообщения и изображения! 📄🖼️',
     errorMessage: 'Sorhy немного устала 😥. Переключитесь на другую модель или попробуйте позже.',
     helpMessage: `
@@ -62,7 +62,7 @@ export const localization = {
     resetHistory: 'Chat tarixi tozalandi ✅',
     modelAlreadyInUse: 'Sorhy-{model} modeli allaqachon ishlatilmoqda ✔️',
     modelSwitched: 'Sorhy-{model} {emoji} ga o\'tkazildi',
-    imageNotSupported: 'Rasm bilan ishlash faqat Sorhy-Pro yoki Sorhy-X modellari bilan mavjud. Iltimos, modelni o\'zgartiring yoki faqat matn yuboring.',
+    imageNotSupported: 'Rasm bilan ishlash faqat Sorhy-X modelli bilan mavjud. Iltimos, modelni o\'zgartiring yoki faqat matn yuboring.',
     onlyTextAndImages: 'Men faqat matn va rasmlarni o\'qiy olaman! 📄🖼️',
     errorMessage: 'Sorhy biroz charchadi 😥. Boshqa modelga o\'ting yoki keyinroq qayta urinib ko\'ring.',
     helpMessage: `

@@ -294,7 +294,8 @@ async function getImageBase64(fileInfo) {
  * Проверка поддержки изображений моделью
  */
 function modelSupportsImages(modelName) {
-  return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
+  // return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
+  return modelName === process.env.MODEL_X;
 }
 
 // Обработчик callback query
