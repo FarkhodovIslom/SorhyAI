@@ -50,14 +50,20 @@ if (!process.env.DEV_ACCESS_KEY) {
   process.exit(1);
 }
 
+
+
 // Инициализация OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
+
+
 // Инициализация Telegram бота
 const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
+
+
 
 // Инициализация менеджера пользователей с MongoDB
 const userManager = new UserDataManager(
@@ -65,13 +71,59 @@ const userManager = new UserDataManager(
   process.env.DB_NAME || 'sorhy'
 );
 
+
+
 // Инициализация command handler
 const commandHandler = new CommandHandler(bot, userManager);
+
+
 
 // Переменные бота
 let botUsername = '';
 let botId = '';
 const version = process.env.VERSION;
+
+// Антиспам система
+const COOLDOWN_TIME = 10000; // 10 секунд в миллисекундах
+const userCooldowns = new Map();
+
+
+
+/**
+ * Проверка cooldown пользователя
+ */
+function checkCooldown(userId) {
+  const now = Date.now();
+  const lastMessage = userCooldowns.get(userId);
+  
+  if (lastMessage && (now - lastMessage) < COOLDOWN_TIME) {
+    const remainingTime = Math.ceil((COOLDOWN_TIME - (now - lastMessage)) / 1000);
+    return { blocked: true, remainingTime };
+  }
+  
+  return { blocked: false };
+}
+
+/**
+ * Установка cooldown для пользователя
+ */
+function setCooldown(userId) {
+  userCooldowns.set(userId, Date.now());
+}
+
+/**
+ * Очистка старых cooldown записей (каждые 5 минут)
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, timestamp] of userCooldowns.entries()) {
+    if (now - timestamp > COOLDOWN_TIME * 2) { // Удаляем записи старше 20 секунд
+      userCooldowns.delete(userId);
+    }
+  }
+}, 300000); // Каждые 5 минут
+
+
 
 /**
  * Инициализация приложения
@@ -98,6 +150,8 @@ async function initializeApp() {
   }
 }
 
+
+
 /**
  * Экранирует специальные символы для Markdown
  */
@@ -121,6 +175,8 @@ function escapeMarkdown(text) {
     .replace(/~/g, '\\~')
     .replace(/`/g, '\\`');
 }
+
+
 
 /**
  * Логирование сообщений
@@ -294,8 +350,7 @@ async function getImageBase64(fileInfo) {
  * Проверка поддержки изображений моделью
  */
 function modelSupportsImages(modelName) {
-  // return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
-  return modelName === process.env.MODEL_X;
+  return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
 }
 
 // Обработчик callback query
@@ -328,6 +383,36 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const isDeveloper = userId === DEVELOPER_ID;
+  
+  // Проверяем cooldown (разработчик освобожден от ограничений)
+  if (!isDeveloper) {
+    const cooldownCheck = checkCooldown(userId);
+    if (cooldownCheck.blocked) {
+      console.log(chalk.yellow(`⏰ Пользователь ${msg.from.first_name} [${msg.from.username}] заблокирован на ${cooldownCheck.remainingTime}с`));
+      
+      // Отправляем предупреждение о cooldown (можно убрать если не хочешь показывать пользователю)
+      const user = await userManager.getUser(chatId);
+      const cooldownMessages = {
+        'ru': `⏱️ Подождите ${cooldownCheck.remainingTime} секунд перед отправкой следующего сообщения.`,
+        'en': `⏱️ Please wait ${cooldownCheck.remainingTime} seconds before sending the next message.`,
+        'uz': `⏱️ Keyingi xabar yuborish uchun ${cooldownCheck.remainingTime} soniya kuting.`
+      };
+      
+      const cooldownMessage = cooldownMessages[user.language] || cooldownMessages['en'];
+      
+      // Отправляем уведомление только если прошло больше 3 секунд с последнего уведомления
+      const lastNotification = userCooldowns.get(`notification_${userId}`) || 0;
+      const now = Date.now();
+      
+      if (now - lastNotification > 3000) {
+        userCooldowns.set(`notification_${userId}`, now);
+        await bot.sendMessage(chatId, cooldownMessage, {
+          reply_to_message_id: msg.message_id
+        });
+      }
+      return;
+    }
+  }
   
   const user = await userManager.getUser(chatId);
   
@@ -367,7 +452,7 @@ bot.on('message', async (msg) => {
   } else if (msg.text) {
     userMessage = getMessageText(msg);
     
-    // ВОТ ТУТ ИСПОЛЬЗУЕМ НАШ НОВЫЙ COMMAND HANDLER!
+    
     if (await commandHandler.handleCommand(chatId, userMessage)) {
       return;
     }
@@ -376,6 +461,11 @@ bot.on('message', async (msg) => {
   }
   
   try {
+    // Устанавливаем cooldown для пользователя (только после всех проверок)
+    if (!isDeveloper) {
+      setCooldown(userId);
+    }
+    
     // Обновляем активность пользователя
     user.updateActivity();
 
@@ -458,7 +548,11 @@ app.get('/admin/stats/', async (req, res) => {
           heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
           external: Math.round(memoryUsage.external / 1024 / 1024) + 'MB'
         },
-        uptime: Math.floor(process.uptime()) + ' секунд'
+        uptime: Math.floor(process.uptime()) + ' секунд',
+        antispam: {
+          activeCooldowns: userCooldowns.size,
+          cooldownTime: COOLDOWN_TIME / 1000 + ' секунд'
+        }
       }
     };
     
@@ -472,6 +566,7 @@ app.get('/admin/stats/', async (req, res) => {
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(chalk.green(`⚡ Сервер запущен на порту ${PORT}`));
+  console.log(chalk.blue(`🛡️ Антиспам система активна (cooldown: ${COOLDOWN_TIME/1000}с)`));
 });
 
 // Корректное завершение работы с отключением от MongoDB
