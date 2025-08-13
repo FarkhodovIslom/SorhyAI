@@ -56,32 +56,56 @@ let botUsername = '';
 let botId = '';
 const version = process.env.VERSION;
 
-// Improved rate limiter - исключаем callback queries и команды
-const rateLimiter = limit({
-  timeFrame: 10000,
-  limit: 1,
-  keyGenerator: (ctx) => ctx.from?.id === DEVELOPER_ID ? `dev_${ctx.from.id}` : ctx.from?.id.toString(),
-  onLimitExceeded: async (ctx) => {
-    const user = await userManager.getUser(ctx.chat.id);
-    const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'cooldownMessage');
-    await ctx.reply(message, { reply_to_message_id: ctx.message?.message_id });
-  },
-  skip: (ctx) => {
-    // Пропускаем разработчика
-    if (ctx.from?.id === DEVELOPER_ID) return true;
+// const rateLimiter = limit({
+//   timeFrame: 10000,
+//   limit: 1,
+//   keyGenerator: (ctx) => ctx.from?.id === DEVELOPER_ID ? `dev_${ctx.from.id}` : ctx.from?.id.toString(),
+//   onLimitExceeded: async (ctx) => {
+//     const user = await userManager.getUser(ctx.chat.id);
+//     const baseMessage = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'cooldownMessage');
     
-    // Пропускаем callback queries (inline keyboard)
-    if (ctx.callbackQuery) return true;
+//     // Отправляем сообщение с таймером
+//     const sentMessage = await ctx.reply(`${baseMessage} (10s)`, { 
+//       reply_to_message_id: ctx.message?.message_id 
+//     });
     
-    // Пропускаем команды
-    if (ctx.message?.text && ctx.message.text.startsWith('/')) return true;
+//     let countdown = 9;
     
-    // Пропускаем команды изменения языка
-    if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) return true;
-    
-    return false;
-  }
-});
+//     // Обновляем каждую секунду
+//     const countdownInterval = setInterval(async () => {
+//       try {
+//         await ctx.api.editMessageText(
+//           ctx.chat.id, 
+//           sentMessage.message_id, 
+//           `${baseMessage} (${countdown}s)`
+//         );
+//         countdown--;
+        
+//         if (countdown < 0) {
+//           clearInterval(countdownInterval);
+//           // Удаляем сообщение
+//           setTimeout(async () => {
+//             try {
+//               await ctx.api.deleteMessage(ctx.chat.id, sentMessage.message_id);
+//             } catch (error) {
+//               console.log(chalk.yellow('Could not delete cooldown message:', error.description));
+//             }
+//           }, 1000);
+//         }
+//       } catch (error) {
+//         // Если не можем редактировать, просто останавливаем таймер
+//         clearInterval(countdownInterval);
+//       }
+//     }, 1000);
+//   },
+//   skip: (ctx) => {
+//     if (ctx.from?.id === DEVELOPER_ID) return true;
+//     if (ctx.callbackQuery) return true;
+//     if (ctx.message?.text && ctx.message.text.startsWith('/')) return true;
+//     if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) return true;
+//     return false;
+//   }
+// });
 
 // Middleware setup
 bot.use(async (ctx, next) => {
@@ -98,9 +122,75 @@ bot.use(async (ctx, next) => {
   await next();
 });
 
-// Rate limiter применяется ТОЛЬКО к обычным сообщениям
-bot.use(rateLimiter);
+// Custom rate limiter middleware
+bot.use(async (ctx, next) => {
+  // Пропускаем разработчика
+  if (ctx.from?.id === DEVELOPER_ID) {
+    return await next();
+  }
+  
+  // Пропускаем callback queries (inline keyboard)
+  if (ctx.callbackQuery) {
+    return await next();
+  }
+  
+  // Пропускаем команды
+  if (ctx.message?.text && ctx.message.text.startsWith('/')) {
+    return await next();
+  }
+  
+  // Пропускаем команды изменения языка
+  if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) {
+    return await next();
+  }
+  
+  // Применяем rate limit только к обычным сообщениям
+  if (ctx.message) {
+    const userId = ctx.from.id.toString();
+    const now = Date.now();
+    
+    // Простой in-memory rate limiter
+    if (!global.rateLimitStore) {
+      global.rateLimitStore = new Map();
+    }
+    
+    const lastMessageTime = global.rateLimitStore.get(userId) || 0;
+    const timeDiff = now - lastMessageTime;
+    
+    if (timeDiff < 10000) { // 10 секунд
+      const user = await userManager.getUser(ctx.chat.id);
+      const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'cooldownMessage');
+      
+      // Отправляем сообщение с автоудалением
+      const sentMessage = await ctx.reply(message, { 
+        reply_to_message_id: ctx.message?.message_id 
+      });
+      
+      // Удаляем через 10 секунд
+      setTimeout(async () => {
+        try {
+          await ctx.api.deleteMessage(ctx.chat.id, sentMessage.message_id);
+        } catch (error) {
+          console.log(chalk.yellow('Could not delete cooldown message:', error.description));
+        }
+      }, 10000);
+      
+      return; // Не продолжаем обработку
+    }
+    
+    // Обновляем время последнего сообщения
+    global.rateLimitStore.set(userId, now);
+  }
+  
+  await next();
+});
+
 bot.use(session({ initial: () => ({}) }));
+
+
+// Rate limiter применяется ТОЛЬКО к обычным сообщениям
+// bot.use(rateLimiter);
+// bot.use(session({ initial: () => ({}) }));
 
 // Initialize command handler
 const commandHandler = new CommandHandler(bot, userManager);
@@ -496,6 +586,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/ping', (req, res) => res.send('pong'));
 

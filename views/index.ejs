@@ -3,351 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorhy Bot Logs</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #2c3e50, #3498db);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .header .subtitle {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #3498db;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .controls {
-            padding: 20px 30px;
-            background: white;
-            border-bottom: 2px solid #ecf0f1;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60, #229954);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 250px;
-            padding: 12px 20px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-box:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .logs-container {
-            padding: 30px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        .log-entry {
-            background: #fff;
-            margin-bottom: 20px;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-
-        .log-entry:hover {
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .log-header {
-            background: linear-gradient(135deg, #34495e, #2c3e50);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .log-time {
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .log-user {
-            font-weight: bold;
-            color: #3498db;
-        }
-
-        .log-content {
-            padding: 20px;
-        }
-
-        .log-message {
-            margin-bottom: 15px;
-        }
-
-        .user-message {
-            background: #e8f4fd;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-            margin-bottom: 10px;
-        }
-
-        .bot-message {
-            background: #f0f8f0;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 4px solid #27ae60;
-        }
-
-        .message-label {
-            font-size: 0.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-            opacity: 0.7;
-        }
-
-        .no-logs {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-            font-size: 1.2em;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.1em;
-            color: #666;
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ddd;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            margin-left: 10px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .auto-refresh {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #3498db;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .stats {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .log-header {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-        }
-    </style>
+    <title>Sorhy Bot User Data</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 Sorhy Bot Logs</h1>
-            <div class="subtitle">Real-time monitoring & analytics</div>
+            <h1>🤖 Sorhy Bot User Data</h1>
+            <div class="subtitle">User messages & interactions</div>
         </div>
 
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-number" id="totalLogs">-</div>
-                <div class="stat-label">Total Logs</div>
+                <div class="stat-number" id="totalUsers">-</div>
+                <div class="stat-label">Total Users</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="todayLogs">-</div>
-                <div class="stat-label">Today</div>
+                <div class="stat-number" id="totalMessages">-</div>
+                <div class="stat-label">Total Messages</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="activeUsers">-</div>
-                <div class="stat-label">Active Users</div>
+                <div class="stat-number" id="totalErrors">-</div>
+                <div class="stat-label">Total Errors</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number" id="lastUpdate">-</div>
@@ -356,15 +33,18 @@
         </div>
 
         <div class="controls">
-            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search logs...">
-            <button class="btn btn-primary" onclick="loadLogs()">
-                📄 Refresh
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search users or messages...">
+            <button class="btn btn-primary" onclick="loadUserData()">
+                🔄 Refresh
             </button>
-            <a href="/admin/logs?key=<%= accessKey %>" class="btn btn-success">
-                💾 Download
+            <button class="btn btn-secondary expand-all-btn" id="expandAllBtn" onclick="toggleAllSections()">
+                📂 Expand All
+            </button>
+            <a href="/admin/users/export?key=<%= accessKey %>" class="btn btn-success">
+                💾 Export Data
             </a>
-            <button class="btn btn-danger" onclick="clearLogs()">
-                🗑️ Clear
+            <button class="btn btn-danger" onclick="clearAllData()">
+                🗑️ Clear All
             </button>
             <div class="auto-refresh">
                 <label class="toggle-switch">
@@ -375,127 +55,223 @@
             </div>
         </div>
 
-        <div class="logs-container" id="logsContainer">
-            <div class="loading">Loading logs...</div>
+        <div class="data-container" id="dataContainer">
+            <div class="loading">Loading user data...</div>
         </div>
     </div>
 
     <script>
-        let logs = [];
-        let filteredLogs = [];
+        let userData = [];
+        let filteredUserData = [];
         let refreshInterval;
+        let allExpanded = false;
         const accessKey = '<%= accessKey %>';
 
-        // Load logs on page load
+        // Load data on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadLogs();
+            loadUserData();
             setupEventListeners();
         });
 
         function setupEventListeners() {
             // Search functionality
             document.getElementById('searchBox').addEventListener('input', function(e) {
-                filterLogs(e.target.value);
+                filterUserData(e.target.value);
             });
 
             // Auto-refresh toggle
             document.getElementById('autoRefresh').addEventListener('change', function(e) {
                 if (e.target.checked) {
-                    refreshInterval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
+                    refreshInterval = setInterval(loadUserData, 10000); // Refresh every 10 seconds
                 } else {
                     clearInterval(refreshInterval);
                 }
             });
         }
 
-        async function loadLogs() {
+        async function loadUserData() {
             try {
                 showLoading();
                 
-                // Simulate API call (replace with actual endpoint)
-                const response = await fetch(`/admin/logs/json?key=${accessKey}`);
+                // Replace with your actual API endpoint
+                const response = await fetch(`/admin/users/data?key=${accessKey}`);
                 
                 if (!response.ok) {
-                    throw new Error('Failed to load logs');
+                    throw new Error('Failed to load user data');
                 }
                 
                 const data = await response.json();
-                logs = data.logs || [];
-                filteredLogs = [...logs];
+                userData = data.users || [];
+                filteredUserData = [...userData];
                 
                 updateStats(data.stats);
-                renderLogs();
+                renderUserData();
             } catch (error) {
-                console.error('Error loading logs:', error);
-                showError('Failed to load logs');
+                console.error('Error loading user data:', error);
+                showError('Failed to load user data');
             }
         }
 
         function showLoading() {
-            document.getElementById('logsContainer').innerHTML = `
-                <div class="loading">Loading logs...</div>
+            document.getElementById('dataContainer').innerHTML = `
+                <div class="loading">Loading user data...</div>
             `;
         }
 
         function showError(message) {
-            document.getElementById('logsContainer').innerHTML = `
-                <div class="no-logs">❌ ${message}</div>
+            document.getElementById('dataContainer').innerHTML = `
+                <div class="no-data">❌ ${message}</div>
             `;
         }
 
         function updateStats(stats) {
             if (stats) {
-                document.getElementById('totalLogs').textContent = stats.total || logs.length;
-                document.getElementById('todayLogs').textContent = stats.today || 0;
-                document.getElementById('activeUsers').textContent = stats.activeUsers || 0;
+                document.getElementById('totalUsers').textContent = stats.totalUsers || userData.length;
+                document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
+                document.getElementById('totalErrors').textContent = stats.totalErrors || 0;
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            } else {
+                // Calculate stats from data
+                const totalMessages = userData.reduce((sum, user) => sum + (user.messages?.length || 0), 0);
+                const totalErrors = userData.reduce((sum, user) => 
+                    sum + (user.messages?.filter(msg => msg.error).length || 0), 0);
+                
+                document.getElementById('totalUsers').textContent = userData.length;
+                document.getElementById('totalMessages').textContent = totalMessages;
+                document.getElementById('totalErrors').textContent = totalErrors;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             }
         }
 
-        function renderLogs() {
-            const container = document.getElementById('logsContainer');
+        function renderUserData() {
+            const container = document.getElementById('dataContainer');
             
-            if (filteredLogs.length === 0) {
-                container.innerHTML = '<div class="no-logs">📝 No logs found</div>';
+            if (filteredUserData.length === 0) {
+                container.innerHTML = '<div class="no-data">👤 No user data found</div>';
                 return;
             }
 
-            const logsHtml = filteredLogs.map(log => `
-                <div class="log-entry">
-                    <div class="log-header">
-                        <div class="log-user">👤 ${log.user || 'Unknown'}</div>
-                        <div class="log-time">${log.time || 'Unknown time'}</div>
-                    </div>
-                    <div class="log-content">
-                        <div class="log-message">
-                            <div class="user-message">
-                                <div class="message-label">User:</div>
-                                ${escapeHtml(log.userMessage || '')}
+            const usersHtml = filteredUserData.map((user, index) => {
+                const userInitial = (user.username || user.id || 'U').charAt(0).toUpperCase();
+                const messagesCount = user.messages?.length || 0;
+                const errorsCount = user.messages?.filter(msg => msg.error).length || 0;
+                
+                return `
+                    <div class="user-section ${allExpanded ? '' : 'collapsed'}" id="user-${index}">
+                        <div class="user-header" onclick="toggleUserSection(${index})">
+                            <div class="user-info">
+                                <div class="user-avatar">${userInitial}</div>
+                                <div class="user-details">
+                                    <h3>${escapeHtml(user.username || user.id || 'Unknown User')}</h3>
+                                    <div class="user-stats">
+                                        ${messagesCount} messages • ${errorsCount} errors
+                                        ${user.lastActivity ? `• Last: ${new Date(user.lastActivity).toLocaleString()}` : ''}
+                                    </div>
+                                </div>
                             </div>
-                            <div class="bot-message">
-                                <div class="message-label">Sorhy:</div>
-                                ${escapeHtml(log.botMessage || '')}
-                            </div>
+                            <div class="toggle-icon">▼</div>
+                        </div>
+                        <div class="messages-table-container" style="display: ${allExpanded ? 'block' : 'none'}">
+                            ${renderUserMessages(user.messages || [])}
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
-            container.innerHTML = logsHtml;
+            container.innerHTML = usersHtml;
         }
 
-        function filterLogs(searchTerm) {
+        function renderUserMessages(messages) {
+            if (!messages.length) {
+                return '<div class="no-data">No messages found for this user</div>';
+            }
+
+            const messagesHtml = messages.map(msg => `
+                <tr>
+                    <td class="timestamp">${msg.timestamp ? new Date(msg.timestamp).toLocaleString() : 'Unknown'}</td>
+                    <td class="message-cell">
+                        <div class="user-message">
+                            ${escapeHtml(msg.userMessage || 'No message')}
+                        </div>
+                    </td>
+                    <td class="message-cell">
+                        <div class="assistant-message">
+                            ${escapeHtml(msg.assistantMessage || 'No response')}
+                        </div>
+                    </td>
+                    <td class="message-cell">
+                        ${msg.error ? `<div class="error-message">${escapeHtml(msg.error)}</div>` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <table class="messages-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User Message</th>
+                            <th>Assistant Response</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${messagesHtml}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function toggleUserSection(index) {
+            const section = document.getElementById(`user-${index}`);
+            const container = section.querySelector('.messages-table-container');
+            const isCollapsed = section.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                section.classList.remove('collapsed');
+                container.style.display = 'block';
+            } else {
+                section.classList.add('collapsed');
+                container.style.display = 'none';
+            }
+        }
+
+        function toggleAllSections() {
+            allExpanded = !allExpanded;
+            const btn = document.getElementById('expandAllBtn');
+            btn.textContent = allExpanded ? '📁 Collapse All' : '📂 Expand All';
+            
+            document.querySelectorAll('.user-section').forEach((section, index) => {
+                const container = section.querySelector('.messages-table-container');
+                if (allExpanded) {
+                    section.classList.remove('collapsed');
+                    container.style.display = 'block';
+                } else {
+                    section.classList.add('collapsed');
+                    container.style.display = 'none';
+                }
+            });
+        }
+
+        function filterUserData(searchTerm) {
             if (!searchTerm.trim()) {
-                filteredLogs = [...logs];
+                filteredUserData = [...userData];
             } else {
                 const term = searchTerm.toLowerCase();
-                filteredLogs = logs.filter(log => 
-                    (log.user && log.user.toLowerCase().includes(term)) ||
-                    (log.userMessage && log.userMessage.toLowerCase().includes(term)) ||
-                    (log.botMessage && log.botMessage.toLowerCase().includes(term))
-                );
+                filteredUserData = userData.filter(user => {
+                    const userMatch = (user.username && user.username.toLowerCase().includes(term)) ||
+                                    (user.id && user.id.toLowerCase().includes(term));
+                    
+                    const messageMatch = user.messages && user.messages.some(msg =>
+                        (msg.userMessage && msg.userMessage.toLowerCase().includes(term)) ||
+                        (msg.assistantMessage && msg.assistantMessage.toLowerCase().includes(term)) ||
+                        (msg.error && msg.error.toLowerCase().includes(term))
+                    );
+                    
+                    return userMatch || messageMatch;
+                });
             }
-            renderLogs();
+            renderUserData();
         }
 
         function escapeHtml(text) {
@@ -504,26 +280,83 @@
             return div.innerHTML;
         }
 
-        async function clearLogs() {
-            if (confirm('Are you sure you want to clear all logs?')) {
+        async function clearAllData() {
+            if (confirm('Ты уверен что хочешь удалить ВСЕ данные пользователей? Это нельзя будет отменить!')) {
                 try {
-                    const response = await fetch(`/admin/logs/clear?key=${accessKey}`, {
+                    const response = await fetch(`/admin/users/clear?key=${accessKey}`, {
                         method: 'POST'
                     });
                     
                     if (response.ok) {
-                        logs = [];
-                        filteredLogs = [];
-                        renderLogs();
-                        alert('Logs cleared successfully!');
+                        userData = [];
+                        filteredUserData = [];
+                        renderUserData();
+                        alert('Все данные успешно удалены!');
                     } else {
-                        throw new Error('Failed to clear logs');
+                        throw new Error('Failed to clear data');
                     }
                 } catch (error) {
-                    console.error('Error clearing logs:', error);
-                    alert('Failed to clear logs');
+                    console.error('Error clearing data:', error);
+                    alert('Не удалось удалить данные');
                 }
             }
+        }
+
+        // Mock data for demo (remove this in production)
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setTimeout(() => {
+                const mockData = {
+                    users: [
+                        {
+                            id: 'user123',
+                            username: 'Hanzo_dev',
+                            lastActivity: new Date().toISOString(),
+                            messages: [
+                                {
+                                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                                    userMessage: 'Привет, как дела?',
+                                    assistantMessage: 'Привет! Все отлично, готов помочь с кодом!',
+                                    error: null
+                                },
+                                {
+                                    timestamp: new Date(Date.now() - 1800000).toISOString(),
+                                    userMessage: 'Помоги с React хуком',
+                                    assistantMessage: 'Конечно! Что конкретно нужно сделать?',
+                                    error: null
+                                },
+                                {
+                                    timestamp: new Date().toISOString(),
+                                    userMessage: 'Сломался useState',
+                                    assistantMessage: '',
+                                    error: 'API timeout after 30 seconds'
+                                }
+                            ]
+                        },
+                        {
+                            id: 'user456',
+                            username: 'TestUser',
+                            lastActivity: new Date(Date.now() - 86400000).toISOString(),
+                            messages: [
+                                {
+                                    timestamp: new Date(Date.now() - 86400000).toISOString(),
+                                    userMessage: 'Test message',
+                                    assistantMessage: 'Test response',
+                                    error: null
+                                }
+                            ]
+                        }
+                    ],
+                    stats: {
+                        totalUsers: 2,
+                        totalMessages: 4,
+                        totalErrors: 1
+                    }
+                };
+                userData = mockData.users;
+                filteredUserData = [...userData];
+                updateStats(mockData.stats);
+                renderUserData();
+            }, 1000);
         }
     </script>
 </body>

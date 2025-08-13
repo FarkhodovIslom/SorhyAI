@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const PORT = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const MAX_HISTORY_LENGTH = 35; // Максимум сообщений в истории
+const MAX_HISTORY_LENGTH = 75; // Максимум сообщений в истории
 const MAX_HISTORY_CHARS = 12000; // Максимум символов в истории
 const SAVE_INTERVAL = 30000; // Сохранение каждые 30 секунд
 const CLEANUP_INTERVAL = 300000; // Очистка неактивных чатов каждые 5 минут
