@@ -21,6 +21,8 @@
   },
   "homepage": "https://github.com/FarkhodovIslom/SorhyAI_bot#readme",
   "dependencies": {
+    "@grammyjs/conversations": "^2.1.0",
+    "@grammyjs/ratelimiter": "^1.2.1",
     "axios": "^1.8.4",
     "chalk": "^5.4.1",
     "dotenv": "^16.4.7",
@@ -29,8 +31,10 @@
     "he": "^1.2.0",
     "mongoose": "^8.15.1",
     "node-fetch": "^3.3.2",
-    "node-telegram-bot-api": "^0.66.0",
     "openai": "^4.92.1",
     "telegram-bot-api": "^2.0.1"
+  },
+  "devDependencies": {
+    "grammy": "^1.37.0"
   }
 }

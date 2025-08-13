@@ -1,169 +1,145 @@
 import 'dotenv/config';
-import TelegramBot from 'node-telegram-bot-api';
+import { Bot, GrammyError, HttpError, session } from 'grammy';
+import { limit } from '@grammyjs/ratelimiter';
 import OpenAI from 'openai';
 import chalk from 'chalk';
 import fs from 'fs';
 import express from 'express';
-import path, { join } from 'path';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { generateSystemPrompt } from './prompt/systemPrompt.js';
+import { getLocalized, createLanguageKeyboard } from './localization/localization.js';
 import { 
-  LANGUAGES,
-  localization,
-  getUserLanguage,
-  getLocalized,
-  createLanguageKeyboard
-} from './localization/localization.js';
-
-import {  
   PORT,
   DEVELOPER_ID,
   MAX_HISTORY_LENGTH,
   MAX_HISTORY_CHARS,
-  MODEL_EMOJIS,
   MONGO_URI,
   MODEL_TEMP,
   MODEL_TOP_P
 } from './config/config.js';
-
-// Импортируем наш новый менеджер пользователей
 import { UserDataManager } from './database/userManager.js';
-// Импортируем новый command handler
 import { CommandHandler } from './handlers/commandHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-if (!process.env.OPENROUTER_API_KEY) {
-  console.error(chalk.red('❌ Missing environment variable: OPENROUTER_API_KEY'));
-  process.exit(1);
+// Environment validation
+const requiredEnvVars = [
+  'OPENROUTER_API_KEY',
+  'TGBOT_API_KEY2', 
+  'DEV_ACCESS_KEY'
+];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(chalk.red(`❌ Missing environment variable: ${envVar}`));
+    process.exit(1);
+  }
 }
 
-if (!process.env.TGBOT_API_KEY || !process.env.TGBOT_API_KEY2) {
-  console.error(chalk.red('❌ Missing environment variable: TGBOT_API_KEY'));
-  process.exit(1);
-}
-
-if (!process.env.DEV_ACCESS_KEY) {
-  console.error(chalk.red('❌ Missing environment variable: DEV_ACCESS_KEY'));
-  process.exit(1);
-}
-
-
-
-// Инициализация OpenAI
+// Initialize services
 const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-
-
-// Инициализация Telegram бота
-const bot = new TelegramBot(process.env.TGBOT_API_KEY, { polling: true });
-
-
-
-// Инициализация менеджера пользователей с MongoDB
+const bot = new Bot(process.env.TGBOT_API_KEY2);
 const userManager = new UserDataManager(
   process.env.MONGODB_URI || MONGO_URI,
   process.env.DB_NAME || 'sorhy'
 );
 
-
-
-// Инициализация command handler
-const commandHandler = new CommandHandler(bot, userManager);
-
-
-
-// Переменные бота
+// Bot state
 let botUsername = '';
 let botId = '';
 const version = process.env.VERSION;
 
-// Антиспам система
-const COOLDOWN_TIME = 10000; // 10 секунд в миллисекундах
-const userCooldowns = new Map();
-
-
-
-/**
- * Проверка cooldown пользователя
- */
-function checkCooldown(userId) {
-  const now = Date.now();
-  const lastMessage = userCooldowns.get(userId);
-  
-  if (lastMessage && (now - lastMessage) < COOLDOWN_TIME) {
-    const remainingTime = Math.ceil((COOLDOWN_TIME - (now - lastMessage)) / 1000);
-    return { blocked: true, remainingTime };
+// Improved rate limiter - исключаем callback queries и команды
+const rateLimiter = limit({
+  timeFrame: 10000,
+  limit: 1,
+  keyGenerator: (ctx) => ctx.from?.id === DEVELOPER_ID ? `dev_${ctx.from.id}` : ctx.from?.id.toString(),
+  onLimitExceeded: async (ctx) => {
+    const user = await userManager.getUser(ctx.chat.id);
+    const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'cooldownMessage');
+    await ctx.reply(message, { reply_to_message_id: ctx.message?.message_id });
+  },
+  skip: (ctx) => {
+    // Пропускаем разработчика
+    if (ctx.from?.id === DEVELOPER_ID) return true;
+    
+    // Пропускаем callback queries (inline keyboard)
+    if (ctx.callbackQuery) return true;
+    
+    // Пропускаем команды
+    if (ctx.message?.text && ctx.message.text.startsWith('/')) return true;
+    
+    // Пропускаем команды изменения языка
+    if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) return true;
+    
+    return false;
   }
-  
-  return { blocked: false };
-}
+});
 
-/**
- * Установка cooldown для пользователя
- */
-function setCooldown(userId) {
-  userCooldowns.set(userId, Date.now());
-}
-
-/**
- * Очистка старых cooldown записей (каждые 5 минут)
- */
-setInterval(() => {
-  const now = Date.now();
-  for (const [userId, timestamp] of userCooldowns.entries()) {
-    if (now - timestamp > COOLDOWN_TIME * 2) { // Удаляем записи старше 20 секунд
-      userCooldowns.delete(userId);
+// Middleware setup
+bot.use(async (ctx, next) => {
+  if (ctx.chat && ctx.from) {
+    const user = await userManager.getUser(ctx.chat.id);
+    ctx.user = user;
+    user.updateActivity();
+    
+    // Сохраняем пользователя при изменении языка
+    if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) {
+      await userManager.saveUserImmediate(ctx.chat.id);
     }
   }
-}, 300000); // Каждые 5 минут
+  await next();
+});
 
+// Rate limiter применяется ТОЛЬКО к обычным сообщениям
+bot.use(rateLimiter);
+bot.use(session({ initial: () => ({}) }));
 
+// Initialize command handler
+const commandHandler = new CommandHandler(bot, userManager);
+
+// Language selection handler - БЕЗ rate limiting
+bot.hears(['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'], async (ctx) => {
+  const languageMap = {
+    '🇺🇿 O\'zbek': 'uz',
+    '🇷🇺 Русский': 'ru',
+    '🇺🇸 English': 'en'
+  };
+  
+  const selectedLanguage = languageMap[ctx.message.text];
+  ctx.user.language = selectedLanguage;
+  
+  // Принудительно сохраняем пользователя
+  await userManager.saveUserImmediate(ctx.chat.id);
+  
+  const welcomeMessage = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, selectedLanguage]]), 'welcomeMessage');
+  await ctx.reply(welcomeMessage, { reply_markup: { remove_keyboard: true } });
+});
+
+// Language check middleware
+bot.use(async (ctx, next) => {
+  if (!ctx.user?.language && ctx.message?.text !== '/start' && !ctx.callbackQuery) {
+    const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, 'en']]), 'selectLanguagePrompt');
+    await ctx.reply(message, createLanguageKeyboard());
+    return;
+  }
+  await next();
+});
 
 /**
- * Инициализация приложения
- */
-async function initializeApp() {
-  console.log(chalk.blue('🚀 Запуск Telegram бота...'));
-  
-  // Подключаемся к MongoDB
-  const mongoConnected = await userManager.connect();
-  if (!mongoConnected) {
-    console.error(chalk.red('❌ Не удалось подключиться к MongoDB. Бот может работать нестабильно.'));
-    // Можем продолжить работу без БД, но с ограниченным функционалом
-  }
-  
-  // Инициализируем бота
-  try {
-    const botInfo = await bot.getMe();
-    botUsername = botInfo.username;
-    botId = botInfo.id;
-    console.log(chalk.green(`🤖 Бот @${botUsername} (${botId}) активен!`));
-  } catch (error) {
-    console.error(chalk.red('❌ Ошибка инициализации бота:'), error);
-    process.exit(1);
-  }
-}
-
-
-
-/**
- * Экранирует специальные символы для Markdown
+ * Escapes special characters for Markdown formatting
  */
 function escapeMarkdown(text) {
-  // Если текст содержит сложные структуры, лучше отправить как plain text
   const hasComplexMarkdown = /[*_`\[\]()~>#+\-=|{}\.!\\]/g.test(text);
+  if (!hasComplexMarkdown) return text;
   
-  if (!hasComplexMarkdown) {
-    return text;
-  }
-  
-  // Простое экранирование только критичных символов
   return text
     .replace(/\\/g, '\\\\')
     .replace(/\[/g, '\\[')
@@ -172,73 +148,61 @@ function escapeMarkdown(text) {
     .replace(/\)/g, '\\)')
     .replace(/_/g, '\\_')
     .replace(/\*/g, '\\*')
-    .replace(/~/g, '\\~')
-    .replace(/`/g, '\\`');
+    .replace(/~/g, '\\~');
 }
 
-
-
 /**
- * Логирование сообщений
+ * Logs user interactions with formatted output
  */
 function logMessage({ first_name, username, userMessage, reply, isDeveloper, modelName = 'Unknown' }) {
   const now = new Date();
-  const tzOffsetMs = 5 * 60 * 60 * 1000;
+  const tzOffsetMs = 5 * 60 * 60 * 1000; // UTC+5 timezone
   const localTime = new Date(now.getTime() + tzOffsetMs);
   const time = localTime.toLocaleString('uz-UZ');
 
-  console.log(chalk.red('┌────────────────────────────────────────────'));
+  // Console logging with colored output
+  const separator = '─'.repeat(44);
+  console.log(chalk.red(`┌${separator}`));
   console.log(`${chalk.red('│')} ${chalk.cyan.bold(time)} ${isDeveloper ? chalk.magenta('[DEV]') : ''}`);
   console.log(`${chalk.red('│')} ${chalk.green(`${first_name} [${username || 'unknown'}]:`)} ${chalk.white(userMessage.slice(0, 100))}${userMessage.length > 100 ? '...' : ''}`);
   console.log(`${chalk.red('│')} ${chalk.yellow(`Sorhy [${modelName}] ➤`)} ${chalk.white(reply.slice(0, 100))}${reply.length > 100 ? '...' : ''}`);
-  console.log(chalk.red('└────────────────────────────────────────────\n'));
+  console.log(chalk.red(`└${separator}\n`));
   
-  // Асинхронное логирование в файл для не-разработчиков
+  // File logging for non-developers only
   if (!isDeveloper) {
-    const logEntry = `
-\n${'='.repeat(80)}\n
-${time} | 
-${first_name} [${username || 'unknown'}]: ${userMessage}
-\nSorhy [${modelName}] ➤ ${reply}
-\n${'='.repeat(80)}\n
-`;
+    const logEntry = `\n${'='.repeat(80)}\n${time} | ${first_name} [${username || 'unknown'}]: ${userMessage}\nSorhy [${modelName}] ➤ ${reply}\n${'='.repeat(80)}\n`;
     
-    if (!fs.existsSync('logs')) {
-      fs.mkdirSync('logs');
-    }
-    
+    if (!fs.existsSync('logs')) fs.mkdirSync('logs');
     fs.appendFile('logs/sorhy-log.txt', logEntry, (err) => {
-      if (err) console.error('Ошибка записи лога:', err);
+      if (err) console.error(chalk.red('Logging error:'), err);
     });
   }
 }
 
 /**
- * Проверка нужности ответа в группе
+ * Determines if bot should respond in group chats
  */
-function shouldRespondInGroup(msg) {
-  const isGroup = msg.chat.type.endsWith('group');
-  if (!isGroup) return true;
+function shouldRespondInGroup(ctx) {
+  if (!ctx.chat.type.endsWith('group')) return true;
   
-  const botWasMentioned = msg.entities?.some(entity =>
-    entity.type === 'mention' &&
-    msg.text && msg.text.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`
-  );
-  const isReplyToBot = msg.reply_to_message?.from?.id === botId;
+  const botWasMentioned = ctx.entities()
+    .some(entity => entity.type === 'mention' && 
+           ctx.message.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`);
+  
+  const isReplyToBot = ctx.message?.reply_to_message?.from?.id === botId;
   
   return botWasMentioned || isReplyToBot;
 }
 
 /**
- * Получение текста сообщения
+ * Extracts clean message text, removing bot mentions in groups
  */
-function getMessageText(msg) {
-  let userMessage = msg.text;
-  const isGroup = msg.chat.type.endsWith('group');
-  const botWasMentioned = msg.entities?.some(entity =>
-    entity.type === 'mention' &&
-    msg.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`
-  );
+function getMessageText(ctx) {
+  let userMessage = ctx.message?.text || '';
+  const isGroup = ctx.chat.type.endsWith('group');
+  const botWasMentioned = ctx.entities()
+    .some(entity => entity.type === 'mention' && 
+           ctx.message.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`);
   
   if (isGroup && botWasMentioned) {
     userMessage = userMessage.replace(`@${botUsername}`, '').trim();
@@ -248,7 +212,7 @@ function getMessageText(msg) {
 }
 
 /**
- * Генерация AI ответа
+ * Generates AI response for text messages
  */
 async function generateAIResponse(chatId, userMessage) {
   const user = await userManager.getUser(chatId);
@@ -270,19 +234,19 @@ async function generateAIResponse(chatId, userMessage) {
   
   const reply = response.choices[0].message.content;
   
-  // Добавляем в историю
+  // Update conversation history
   user.addToHistory(userMessage, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
   
-  // Асинхронно сохраняем пользователя
+  // Add to save queue
   userManager.saveUser(chatId, user).catch(err => {
-    console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), err);
+    console.error(chalk.red(`User save error ${chatId}:`), err);
   });
   
   return reply;
 }
 
 /**
- * Генерация AI ответа с изображением
+ * Generates AI response for messages with images
  */
 async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   const user = await userManager.getUser(chatId);
@@ -290,9 +254,7 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   
   const imageMessage = {
     type: "image_url",
-    image_url: {
-      url: `data:image/jpeg;base64,${imageBase64}`
-    }
+    image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
   };
   
   const messages = [
@@ -300,10 +262,7 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
     ...user.history.map(h => ({ role: h.role, content: h.content })),
     { 
       role: 'user', 
-      content: [
-        imageMessage,
-        { type: "text", text: userMessage }
-      ]
+      content: [imageMessage, { type: "text", text: userMessage }]
     }
   ];
 
@@ -317,206 +276,236 @@ async function generateAIResponseWithImage(chatId, userMessage, imageBase64) {
   
   const reply = response.choices[0].message.content;
   
-  // Сохраняем в историю без изображения
+  // Save to history without image data
   user.addToHistory(`[IMAGE] ${userMessage}`, reply, MAX_HISTORY_LENGTH, MAX_HISTORY_CHARS);
   
-  // Асинхронно сохраняем
   userManager.saveUser(chatId, user).catch(err => {
-    console.error(chalk.red(`Ошибка сохранения пользователя ${chatId}:`), err);
+    console.error(chalk.red(`User save error ${chatId}:`), err);
   });
   
   return reply;
 }
 
 /**
- * Получение base64 изображения
+ * Converts Telegram image to base64 format
  */
 async function getImageBase64(fileInfo) {
   try {
-    const fileLink = await bot.getFileLink(fileInfo.file_id);
-    const response = await fetch(fileLink);
+    const file = await bot.api.getFile(fileInfo.file_id);
+    const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
+    
+    const response = await fetch(fileUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
     }
+    
     const buffer = await response.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
   } catch (error) {
-    console.error('Ошибка при получении base64 изображения:', error);
+    console.error(chalk.red('Image processing error:'), error);
     throw error;
   }
 }
 
 /**
- * Проверка поддержки изображений моделью
+ * Checks if model supports image processing
  */
 function modelSupportsImages(modelName) {
   return modelName === process.env.MODEL_PRO || modelName === process.env.MODEL_X;
 }
 
-// Обработчик callback query
-bot.on('callback_query', async (query) => {
-  const chatId = query.message.chat.id;
-  const data = query.data;
+// Photo message handler
+bot.on(':photo', async (ctx) => {
+  if (!shouldRespondInGroup(ctx)) return;
   
-  if (data.startsWith('lang_')) {
-    const langCode = data.split('_')[1];
-    const language = LANGUAGES[langCode];
-    
-    if (language) {
-      const user = await userManager.getUser(chatId);
-      user.language = language;
-      user.updateActivity();
-      await userManager.saveUser(chatId, user);
-      
-      await bot.answerCallbackQuery(query.id);
-      await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'languageChanged'));
-      
-      if (user.history.length === 0) {
-        await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'));
-      }
-    }
-  }
-});
-
-// Основной обработчик сообщений
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const userId = msg.from.id;
+  const { chat: { id: chatId }, from: { id: userId, first_name, username }, user } = ctx;
   const isDeveloper = userId === DEVELOPER_ID;
   
-  // Проверяем cooldown (разработчик освобожден от ограничений)
-  if (!isDeveloper) {
-    const cooldownCheck = checkCooldown(userId);
-    if (cooldownCheck.blocked) {
-      console.log(chalk.yellow(`⏰ Пользователь ${msg.from.first_name} [${msg.from.username}] заблокирован на ${cooldownCheck.remainingTime}с`));
-      
-      // Отправляем предупреждение о cooldown (можно убрать если не хочешь показывать пользователю)
-      const user = await userManager.getUser(chatId);
-      const cooldownMessages = {
-        'ru': `⏱️ Подождите ${cooldownCheck.remainingTime} секунд перед отправкой следующего сообщения.`,
-        'en': `⏱️ Please wait ${cooldownCheck.remainingTime} seconds before sending the next message.`,
-        'uz': `⏱️ Keyingi xabar yuborish uchun ${cooldownCheck.remainingTime} soniya kuting.`
-      };
-      
-      const cooldownMessage = cooldownMessages[user.language] || cooldownMessages['en'];
-      
-      // Отправляем уведомление только если прошло больше 3 секунд с последнего уведомления
-      const lastNotification = userCooldowns.get(`notification_${userId}`) || 0;
-      const now = Date.now();
-      
-      if (now - lastNotification > 3000) {
-        userCooldowns.set(`notification_${userId}`, now);
-        await bot.sendMessage(chatId, cooldownMessage, {
-          reply_to_message_id: msg.message_id
-        });
-      }
-      return;
-    }
-  }
-  
-  const user = await userManager.getUser(chatId);
-  
-  // Проверяем язык
-  if (!user.language && (!msg.text || msg.text !== '/start')) {
-    await bot.sendMessage(
-      chatId, 
-      'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:',
-      createLanguageKeyboard()
-    );
-    return;
-  }
-  
-  if (!shouldRespondInGroup(msg)) return;
-  
-  const userModel = user.model;
-  const modelName = userModel.split('/').pop();
-  
-  let userMessage = '';
-  let imageData = null;
-  
-  if (msg.photo) {
-    if (!modelSupportsImages(userModel)) {
-      return bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'imageNotSupported'), {
-        reply_to_message_id: msg.message_id
-      });
-    }
-    
-    const photo = msg.photo[msg.photo.length - 1];
-    try {
-      imageData = await getImageBase64(photo);
-      userMessage = msg.caption || 'What do you see in this image?';
-    } catch (err) {
-      console.error('Ошибка при обработке изображения:', err);
-      return bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
-    }
-  } else if (msg.text) {
-    userMessage = getMessageText(msg);
-    
-    
-    if (await commandHandler.handleCommand(chatId, userMessage)) {
-      return;
-    }
-  } else {
-    return bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'onlyTextAndImages'));
+  if (!modelSupportsImages(user.model)) {
+    const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'imageNotSupported');
+    return ctx.reply(message, { reply_to_message_id: ctx.message.message_id });
   }
   
   try {
-    // Устанавливаем cooldown для пользователя (только после всех проверок)
-    if (!isDeveloper) {
-      setCooldown(userId);
-    }
+    const photo = ctx.message.photo[ctx.message.photo.length - 1];
+    const imageData = await getImageBase64(photo);
+    const userMessage = ctx.message.caption || getLocalized(chatId, new Map([[chatId, user.language]]), 'defaultImageQuery');
     
-    // Обновляем активность пользователя
-    user.updateActivity();
-
-    await bot.sendChatAction(chatId, 'typing');
+    await ctx.replyWithChatAction('typing');
     
-    let reply;
+    const reply = await generateAIResponseWithImage(chatId, userMessage, imageData);
     
-    if (imageData) {
-      reply = await generateAIResponseWithImage(chatId, userMessage, imageData);
-    } else {
-      reply = await generateAIResponse(chatId, userMessage);
-    }
-    
-    await bot.sendMessage(chatId, escapeMarkdown(reply), {
+    await ctx.reply(escapeMarkdown(reply), {
       parse_mode: 'Markdown',
-      reply_to_message_id: msg.message_id
+      reply_to_message_id: ctx.message.message_id
     });
     
-    logMessage({
-      first_name: msg.from.first_name,
-      username: msg.from.username,
-      userMessage: imageData ? `[IMAGE] ${userMessage}` : userMessage,
-      reply,
-      isDeveloper,
-      modelName
-    });
+    const modelName = user.model.split('/').pop();
+    logMessage({ first_name, username, userMessage: `[IMAGE] ${userMessage}`, reply, isDeveloper, modelName });
     
   } catch (err) {
-    console.error(err);
-    await bot.sendMessage(chatId, getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage'));
+    console.error(chalk.red('Photo processing error:'), err);
+    const errorMessage = getLocalized(chatId, new Map([[chatId, user.language]]), 'errorMessage');
+    await ctx.reply(errorMessage);
   }
 });
 
-// Express сервер
-const app = express();
+// Text message handler
+bot.on('message:text', async (ctx) => {
+  if (!shouldRespondInGroup(ctx)) return;
+  
+  const userMessage = getMessageText(ctx);
+  
+  // Skip commands (handled by CommandHandler)
+  if (userMessage.startsWith('/')) return;
+  
+  // Skip language selection (handled above)
+  if (['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(userMessage)) return;
+  
+  try {
+    const { chat: { id: chatId }, from: { id: userId, first_name, username }, user } = ctx;
+    const isDeveloper = userId === DEVELOPER_ID;
+    const modelName = user.model.split('/').pop();
+    
+    await ctx.replyWithChatAction('typing');
+    
+    const reply = await generateAIResponse(chatId, userMessage);
+    
+    await ctx.reply(escapeMarkdown(reply), {
+      parse_mode: 'Markdown',
+      reply_to_message_id: ctx.message.message_id
+    });
+    
+    logMessage({ first_name, username, userMessage, reply, isDeveloper, modelName });
+    
+  } catch (err) {
+    console.error(chalk.red('Message processing error:'), err);
+    const errorMessage = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, ctx.user.language]]), 'errorMessage');
+    await ctx.reply(errorMessage);
+  }
+});
 
+// Handler for unsupported message types
+bot.on('message', async (ctx) => {
+  if (!ctx.message.text && !ctx.message.photo) {
+    const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, ctx.user.language]]), 'onlyTextAndImages');
+    await ctx.reply(message);
+  }
+});
+
+// Error handling
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(chalk.red(`Error handling update ${ctx.update.update_id}:`));
+  const e = err.error;
+  
+  if (e instanceof GrammyError) {
+    console.error(chalk.red("Request error:"), e.description);
+  } else if (e instanceof HttpError) {
+    console.error(chalk.red("Telegram connection error:"), e);
+  } else {
+    console.error(chalk.red("Unknown error:"), e);
+  }
+});
+
+/**
+ * Parse log file into structured data
+ */
+function parseLogs() {
+  const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
+  
+  if (!fs.existsSync(logPath)) {
+    return { logs: [], stats: { total: 0, today: 0 } };
+  }
+  
+  try {
+    const content = fs.readFileSync(logPath, 'utf8');
+    const entries = content.split('='.repeat(80)).filter(entry => entry.trim());
+    
+    const logs = entries.map(entry => {
+      const lines = entry.trim().split('\n');
+      if (lines.length < 3) return null;
+      
+      const firstLine = lines[0];
+      const userLine = lines[1];
+      const botLine = lines[2];
+      
+      const timeMatch = firstLine.match(/^(.+?) \|/);
+      const userMatch = userLine.match(/^(.+?) \[(.+?)\]: (.+)$/);
+      const botMatch = botLine.match(/^Sorhy \[(.+?)\] ➤ (.+)$/);
+      
+      if (!timeMatch || !userMatch || !botMatch) return null;
+      
+      return {
+        time: timeMatch[1],
+        user: `${userMatch[1]} [${userMatch[2]}]`,
+        userMessage: userMatch[3],
+        botMessage: botMatch[2],
+        model: botMatch[1]
+      };
+    }).filter(Boolean);
+    
+    const today = new Date().toDateString();
+    const todayCount = logs.filter(log => 
+      log.time && new Date(log.time).toDateString() === today
+    ).length;
+    
+    return {
+      logs: logs.reverse(), // Newest first
+      stats: {
+        total: logs.length,
+        today: todayCount,
+        activeUsers: new Set(logs.map(l => l.user)).size
+      }
+    };
+  } catch (error) {
+    console.error(chalk.red('Error parsing logs:'), error);
+    return { logs: [], stats: { total: 0, today: 0 } };
+  }
+}
+
+/**
+ * Initializes the application
+ */
+async function initializeApp() {
+  console.log(chalk.blue('🚀 Starting Telegram Bot...'));
+  
+  // Connect to MongoDB
+  const mongoConnected = await userManager.connect();
+  if (!mongoConnected) {
+    console.error(chalk.red('❌ MongoDB connection failed. Bot may be unstable.'));
+  }
+  
+  // Initialize bot
+  try {
+    const botInfo = await bot.api.getMe();
+    botUsername = botInfo.username;
+    botId = botInfo.id;
+    console.log(chalk.green(`🤖 Bot @${botUsername} (${botId}) active!`));
+  } catch (error) {
+    console.error(chalk.red('❌ Bot initialization error:'), error);
+    process.exit(1);
+  }
+  
+  // Start bot
+  await bot.start();
+}
+
+// Express server setup
+const app = express();
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'))
+app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
 
 app.get('/ping', (req, res) => res.send('pong'));
 
+// Admin routes
 app.get('/admin/logs/', (req, res) => {
-  const accessKey = req.query.key;
-
-  if (accessKey !== process.env.DEV_ACCESS_KEY) {
+  if (req.query.key !== process.env.DEV_ACCESS_KEY) {
     return res.status(401).send('Access denied! You are not Hanzo!');
   }
 
   const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
-
   if (fs.existsSync(logPath)) {
     res.download(logPath, 'sorhy-log.txt');
   } else {
@@ -524,10 +513,45 @@ app.get('/admin/logs/', (req, res) => {
   }
 });
 
-app.get('/admin/stats/', async (req, res) => {
-  const accessKey = req.headers['x-access-key'];
+// NEW: EJS logs page
+app.get('/admin/logs/view', (req, res) => {
+  if (req.query.key !== process.env.DEV_ACCESS_KEY) {
+    return res.status(401).send('Access denied! You are not Hanzo!');
+  }
   
-  if (accessKey !== process.env.DEV_ACCESS_KEY) {
+  res.render('index', { accessKey: process.env.DEV_ACCESS_KEY });
+});
+
+// NEW: JSON API for logs
+app.get('/admin/logs/json', (req, res) => {
+  if (req.query.key !== process.env.DEV_ACCESS_KEY) {
+    return res.status(401).json({ error: 'Access denied!' });
+  }
+  
+  const data = parseLogs();
+  res.json(data);
+});
+
+// NEW: Clear logs endpoint
+app.post('/admin/logs/clear', (req, res) => {
+  if (req.query.key !== process.env.DEV_ACCESS_KEY) {
+    return res.status(401).json({ error: 'Access denied!' });
+  }
+  
+  try {
+    const logPath = path.join(__dirname, 'logs', 'sorhy-log.txt');
+    if (fs.existsSync(logPath)) {
+      fs.unlinkSync(logPath);
+    }
+    res.json({ success: true, message: 'Logs cleared successfully' });
+  } catch (error) {
+    console.error(chalk.red('Error clearing logs:'), error);
+    res.status(500).json({ error: 'Failed to clear logs' });
+  }
+});
+
+app.get('/admin/stats/', async (req, res) => {
+  if (req.headers['x-access-key'] !== process.env.DEV_ACCESS_KEY) {
     return res.status(401).send('Access denied!');
   }
   
@@ -536,54 +560,47 @@ app.get('/admin/stats/', async (req, res) => {
     const memoryUsage = process.memoryUsage();
     
     const fullStats = {
-      database: {
-        totalUsers: stats.totalUsers,
-        activeUsers: stats.activeUsers,
-        cachedUsers: stats.cachedUsers,
-        isConnected: stats.isConnected
-      },
+      database: stats,
       system: {
         memoryUsage: {
           heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB',
           heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + 'MB',
           external: Math.round(memoryUsage.external / 1024 / 1024) + 'MB'
         },
-        uptime: Math.floor(process.uptime()) + ' секунд',
-        antispam: {
-          activeCooldowns: userCooldowns.size,
-          cooldownTime: COOLDOWN_TIME / 1000 + ' секунд'
-        }
+        uptime: Math.floor(process.uptime()) + ' seconds',
+        rateLimit: { timeFrame: '10 seconds', limit: '1 message' }
       }
     };
     
     res.json(fullStats);
   } catch (error) {
-    console.error('Ошибка получения статистики:', error);
-    res.status(500).json({ error: 'Ошибка получения статистики' });
+    console.error(chalk.red('Stats error:'), error);
+    res.status(500).json({ error: 'Statistics unavailable' });
   }
 });
 
-// Запуск сервера
+// Start server
 app.listen(PORT, () => {
-  console.log(chalk.green(`⚡ Сервер запущен на порту ${PORT}`));
-  console.log(chalk.blue(`🛡️ Антиспам система активна (cooldown: ${COOLDOWN_TIME/1000}с)`));
+  console.log(chalk.green(`⚡ Server running on port ${PORT}`));
+  console.log(chalk.blue(`🛡️ Rate limiting active (1 message / 10 seconds)`));
+  console.log(chalk.cyan(`📊 Logs available at: /admin/logs/view?key=${process.env.DEV_ACCESS_KEY}`));
 });
 
-// Корректное завершение работы с отключением от MongoDB
-process.on('SIGINT', async () => {
-  console.log(chalk.yellow('\n🛑 Получен сигнал завершения SIGINT...'));
+// Graceful shutdown handling
+const gracefulShutdown = async () => {
+  console.log(chalk.yellow('\n🛑 Shutdown signal received...'));
+  
+  await bot.stop();
   await userManager.disconnect();
+  
   process.exit(0);
-});
+};
 
-process.on('SIGTERM', async () => {
-  console.log(chalk.yellow('\n🛑 Получен сигнал завершения SIGTERM...'));
-  await userManager.disconnect();
-  process.exit(0);
-});
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
 
-// Запускаем инициализацию
+// Start application
 initializeApp().catch(error => {
-  console.error(chalk.red('❌ Критическая ошибка запуска:'), error);
+  console.error(chalk.red('❌ Critical startup error:'), error);
   process.exit(1);
 });

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorhy Bot Logs</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="30" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="80" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 2px solid #ecf0f1;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .logs-container {
+            padding: 30px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: #fff;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .log-entry:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .log-header {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-time {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .log-user {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .log-content {
+            padding: 20px;
+        }
+
+        .log-message {
+            margin-bottom: 15px;
+        }
+
+        .user-message {
+            background: #e8f4fd;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 10px;
+        }
+
+        .bot-message {
+            background: #f0f8f0;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .message-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            opacity: 0.7;
+        }
+
+        .no-logs {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #3498db;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .stats {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .log-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Sorhy Bot Logs</h1>
+            <div class="subtitle">Real-time monitoring & analytics</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalLogs">-</div>
+                <div class="stat-label">Total Logs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="todayLogs">-</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeUsers">-</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="lastUpdate">-</div>
+                <div class="stat-label">Last Update</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search logs...">
+            <button class="btn btn-primary" onclick="loadLogs()">
+                📄 Refresh
+            </button>
+            <a href="/admin/logs?key=<%= accessKey %>" class="btn btn-success">
+                💾 Download
+            </a>
+            <button class="btn btn-danger" onclick="clearLogs()">
+                🗑️ Clear
+            </button>
+            <div class="auto-refresh">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoRefresh">
+                    <span class="slider"></span>
+                </label>
+                Auto-refresh
+            </div>
+        </div>
+
+        <div class="logs-container" id="logsContainer">
+            <div class="loading">Loading logs...</div>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        let filteredLogs = [];
+        let refreshInterval;
+        const accessKey = '<%= accessKey %>';
+
+        // Load logs on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('searchBox').addEventListener('input', function(e) {
+                filterLogs(e.target.value);
+            });
+
+            // Auto-refresh toggle
+            document.getElementById('autoRefresh').addEventListener('change', function(e) {
+                if (e.target.checked) {
+                    refreshInterval = setInterval(loadLogs, 5000); // Refresh every 5 seconds
+                } else {
+                    clearInterval(refreshInterval);
+                }
+            });
+        }
+
+        async function loadLogs() {
+            try {
+                showLoading();
+                
+                // Simulate API call (replace with actual endpoint)
+                const response = await fetch(`/admin/logs/json?key=${accessKey}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load logs');
+                }
+                
+                const data = await response.json();
+                logs = data.logs || [];
+                filteredLogs = [...logs];
+                
+                updateStats(data.stats);
+                renderLogs();
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                showError('Failed to load logs');
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('logsContainer').innerHTML = `
+                <div class="loading">Loading logs...</div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('logsContainer').innerHTML = `
+                <div class="no-logs">❌ ${message}</div>
+            `;
+        }
+
+        function updateStats(stats) {
+            if (stats) {
+                document.getElementById('totalLogs').textContent = stats.total || logs.length;
+                document.getElementById('todayLogs').textContent = stats.today || 0;
+                document.getElementById('activeUsers').textContent = stats.activeUsers || 0;
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logsContainer');
+            
+            if (filteredLogs.length === 0) {
+                container.innerHTML = '<div class="no-logs">📝 No logs found</div>';
+                return;
+            }
+
+            const logsHtml = filteredLogs.map(log => `
+                <div class="log-entry">
+                    <div class="log-header">
+                        <div class="log-user">👤 ${log.user || 'Unknown'}</div>
+                        <div class="log-time">${log.time || 'Unknown time'}</div>
+                    </div>
+                    <div class="log-content">
+                        <div class="log-message">
+                            <div class="user-message">
+                                <div class="message-label">User:</div>
+                                ${escapeHtml(log.userMessage || '')}
+                            </div>
+                            <div class="bot-message">
+                                <div class="message-label">Sorhy:</div>
+                                ${escapeHtml(log.botMessage || '')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = logsHtml;
+        }
+
+        function filterLogs(searchTerm) {
+            if (!searchTerm.trim()) {
+                filteredLogs = [...logs];
+            } else {
+                const term = searchTerm.toLowerCase();
+                filteredLogs = logs.filter(log => 
+                    (log.user && log.user.toLowerCase().includes(term)) ||
+                    (log.userMessage && log.userMessage.toLowerCase().includes(term)) ||
+                    (log.botMessage && log.botMessage.toLowerCase().includes(term))
+                );
+            }
+            renderLogs();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function clearLogs() {
+            if (confirm('Are you sure you want to clear all logs?')) {
+                try {
+                    const response = await fetch(`/admin/logs/clear?key=${accessKey}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        logs = [];
+                        filteredLogs = [];
+                        renderLogs();
+                        alert('Logs cleared successfully!');
+                    } else {
+                        throw new Error('Failed to clear logs');
+                    }
+                } catch (error) {
+                    console.error('Error clearing logs:', error);
+                    alert('Failed to clear logs');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
