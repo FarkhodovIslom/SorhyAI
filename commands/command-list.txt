@@ -1,7 +1,0 @@
-/start – Запустить бота 
-/reset – Сбросить историю разговора
-/model_lite – Переключиться на Sorhy-NLP Lite
-/model_pro – Переключиться на Sorhy-NLP Pro
-/model_x – Переключиться на Sorhy-NLP X
-/language – Изменить язык
-/help – Получить помощь

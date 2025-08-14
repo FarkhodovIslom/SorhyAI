@@ -56,57 +56,6 @@ let botUsername = '';
 let botId = '';
 const version = process.env.VERSION;
 
-// const rateLimiter = limit({
-//   timeFrame: 10000,
-//   limit: 1,
-//   keyGenerator: (ctx) => ctx.from?.id === DEVELOPER_ID ? `dev_${ctx.from.id}` : ctx.from?.id.toString(),
-//   onLimitExceeded: async (ctx) => {
-//     const user = await userManager.getUser(ctx.chat.id);
-//     const baseMessage = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'cooldownMessage');
-    
-//     // Отправляем сообщение с таймером
-//     const sentMessage = await ctx.reply(`${baseMessage} (10s)`, { 
-//       reply_to_message_id: ctx.message?.message_id 
-//     });
-    
-//     let countdown = 9;
-    
-//     // Обновляем каждую секунду
-//     const countdownInterval = setInterval(async () => {
-//       try {
-//         await ctx.api.editMessageText(
-//           ctx.chat.id, 
-//           sentMessage.message_id, 
-//           `${baseMessage} (${countdown}s)`
-//         );
-//         countdown--;
-        
-//         if (countdown < 0) {
-//           clearInterval(countdownInterval);
-//           // Удаляем сообщение
-//           setTimeout(async () => {
-//             try {
-//               await ctx.api.deleteMessage(ctx.chat.id, sentMessage.message_id);
-//             } catch (error) {
-//               console.log(chalk.yellow('Could not delete cooldown message:', error.description));
-//             }
-//           }, 1000);
-//         }
-//       } catch (error) {
-//         // Если не можем редактировать, просто останавливаем таймер
-//         clearInterval(countdownInterval);
-//       }
-//     }, 1000);
-//   },
-//   skip: (ctx) => {
-//     if (ctx.from?.id === DEVELOPER_ID) return true;
-//     if (ctx.callbackQuery) return true;
-//     if (ctx.message?.text && ctx.message.text.startsWith('/')) return true;
-//     if (ctx.message?.text && ['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'].includes(ctx.message.text)) return true;
-//     return false;
-//   }
-// });
-
 // Middleware setup
 bot.use(async (ctx, next) => {
   if (ctx.chat && ctx.from) {

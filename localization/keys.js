@@ -1,10 +1,10 @@
 // localization/keys.js
 
 /**
- * Ключи локализации для всех UI-элементов
+ * UI localization keys
  */
 export const LOCALIZATION_KEYS = {
-  // Кнопки интерфейса
+  // Interface buttons
   'changeLanguageBtn': {
     'en': 'Change Language',
     'ru': 'Сменить язык',
@@ -53,21 +53,22 @@ export const LOCALIZATION_KEYS = {
     'uz': 'Sozlamalarga qaytish'
   },
 
-  // Сообщения команд
+
+  // Command messages
   'selectLanguageWelcome': {
     'multi': 'Please select your language / Пожалуйста, выберите язык / Iltimos, tilingizni tanlang:'
   },
   
   'startMessage': {
-    'en': '🤖 Welcome to Sorhy AI Bot!\n\nI\'m powered by advanced AI models and ready to help you with any questions or tasks.\n\nAvailable models:\n🟢 Lite - Fast and efficient\n🔵 Pro - Advanced with image support  \n🟣 X - Most powerful with image support\n\nUse /settings to customize your experience!',
-    'ru': '🤖 Добро пожаловать в Sorhy AI Bot!\n\nЯ работаю на продвинутых AI моделях и готов помочь вам с любыми вопросами и задачами.\n\nДоступные модели:\n🟢 Lite - Быстрая и эффективная\n🔵 Pro - Продвинутая с поддержкой изображений\n🟣 X - Самая мощная с поддержкой изображений\n\nИспользуйте /settings для настройки!',
-    'uz': '🤖 Sorhy AI Bot\'ga xush kelibsiz!\n\nMen ilg\'or AI modellar asosida ishlayman va sizga har qanday savol va vazifalar bilan yordam berishga tayyorman.\n\nMavjud modellar:\n🟢 Lite - Tez va samarali\n🔵 Pro - Rasm qo\'llab-quvvatlash bilan ilg\'or\n🟣 X - Rasm qo\'llab-quvvatlash bilan eng kuchli\n\nSozlamalarni ochish uchun /settings dan foydalaning!'
+    'en': '👋 Hey there! I\'m Sorhy AI Bot!\n\nLooking for a all-in-one chat buddy? You\'ve found the right AI! I love deep conversations, casual banter, creative brainstorming, even coding!\n\n💬 Chat Modes:\n🟢 Lite - Quick & witty responses\n🔵 Pro - Deeper conversations + can see images you share\n🟣 X - Most thoughtful discussions & solving complex problems\n\nSo... what\'s up? Drop me a message or use /settings to customize how we chat! 😊',
+    'ru': '👋 Привет! Я Sorhy AI Bot!\n\nИщешь All-in-one чатбота? Ты по адресу! Обожаю глубокие разговоры, непринужденную болтовню, креативные идеи или даже могу помочь с кодом!\n\n💬 Мои модели:\n🟢 Lite - Быстрые и легковесный\n🔵 Pro - Глубокие беседы + могу видеть твои картинки\n🟣 X - Самые вдумчивые диалоги и глубокий анализ кода, сложных задач и тд.\n\nТак... как дела? Пиши что на душе или жми /settings для настройки! 😊',
+    'uz': '👋 Salom! Men Sorhy AI Bot!\n\nAll-in-one Chatbot qidiryapsizmi? To\'g\'ri joyda siz! Men chuqur suhbatlar, erkin gaplashish, ijodiy g\'oyalar haqida va hatto kodham yoza olaman!.\n\n💬 Mening modellarim:\n🟢 Lite - Tez va Yengil\n🔵 Pro - Chuqur suhbatlar + rasmlaringizni ko\'ra olaman\n🟣 X - Chuqur dialoglar va qiyin algoritm va masalalarni tushunish\n\nXo\'sh... nima haqida gaplashamiz? Parametrlar uchun /settings dan foydalaning! 😊'
   },
 
   'helpMessage': {
-    'en': '🔧 <b>Available Commands:</b>\n\n/settings - Open settings menu\n/start - Start the bot\n/reset - Clear conversation history\n/language - Change language\n/help - Show this help\n\n<b>Model Commands:</b>\n/model_lite - Switch to Lite model\n/model_pro - Switch to Pro model  \n/model_x - Switch to X model\n\n<b>Features:</b>\n• Text conversations with AI\n• Image analysis (Pro/X models)\n• Multiple languages support\n• Conversation history\n\nJust send me a message to start chatting!',
-    'ru': '🔧 <b>Доступные команды:</b>\n\n/settings - Открыть меню настроек\n/start - Запустить бота\n/reset - Очистить историю разговора\n/language - Изменить язык\n/help - Показать эту справку\n\n<b>Команды моделей:</b>\n/model_lite - Переключиться на модель Lite\n/model_pro - Переключиться на модель Pro\n/model_x - Переключиться на модель X\n\n<b>Возможности:</b>\n• Текстовые разговоры с ИИ\n• Анализ изображений (модели Pro/X)\n• Поддержка нескольких языков\n• Контекстная память\n\nПросто отправьте мне сообщение, чтобы начать общение!',
-    'uz': '🔧 <b>Mavjud buyruqlar:</b>\n\n/settings - Sozlamalar menyusini ochish\n/start - Botni ishga tushirish\n/reset - Suhbat tarixini tozalash\n/language - Tilni o\'zgartirish\n/help - Bu yordamni ko\'rsatish\n\n<b>Model buyruqlari:</b>\n/model_lite - Lite modelga o\'tish\n/model_pro - Pro modelga o\'tish\n/model_x - X modelga o\'tish\n\n<b>Imkoniyatlar:</b>\n• AI bilan matnli suhbatlar\n• Rasm tahlili (Pro/X modellari)\n• Ko\'p til qo\'llab-quvvatlash\n• Suhbat tarixi\n\nSuhbatni boshlash uchun menga xabar yuboring!'
+    'en': '🛠️ <b>Commands & Stuff:</b>\n\n/settings - Customize your chat experience\n/start - Restart our conversation\n/reset - Fresh start (bye bye my memory! 😄)\n/language - Switch languages\n/help - You\'re looking at it! 😆\n\n<b>Switch Models:</b>\n/model_lite - Fast and lighweight 🏃‍♂️\n/model_pro - Smart + sees your pics 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>What I can do:</b>\n• Chat about literally anything\n• Look at your images and tell you what\'s up\n• Talk in multiple languages\n• Coding, bug fixing and problem solving!\n\nJust drop me a line and let\'s get this conversation rolling! 💬',
+    'ru': '🛠️ <b>Команды и всякое:</b>\n\n/settings - Настрой бота под себя\n/start - Перезапустить меня\n/reset - Начать с чистого листа (стереть мою память 😄)\n/language - Сменить язык\n/help - Ты это сейчас читаешь! 😆\n\n<b>Переключение моделей:</b>\n/model_lite - Легкая и быстрая 🏃‍♂️\n/model_pro - Умная + видит твои картинки 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>Что я умею:</b>\n• Болтать вообще о чем угодно\n• Смотреть на твои фотки и рассказывать что там\n• Говорить на разных языках\n• Кодить и даже багфиксы!\n\nПросто пиши что в голову придет, и погнали общаться! 💬',
+    'uz': '🛠️ <b>Buyruqlar va boshqalar:</b>\n\n/settings - Chatni o\'zingizga moslang\n/start - Botni qayta boshlash\n/reset - Chat tarixini tozalash (хotiramni tozalash 😄)\n/language - Tilni almashtirish\n/help - Hozir shuni o\'qiyapsiz! 😆\n\n<b>Modellarni almashtirish:</b>\n/model_lite - Tezroq va yengilroq 🏃‍♂️\n/model_pro - Aqlli + rasmlaringizni ko\'radi 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>Nima qila olaman:</b>\n• Har qanday narsa haqida gaplashish\n• Rasmlarni ko\'ra olaman \n• Turli tillarda gaplasha olaman\n• Coding va bug fixing!\n\nXohlaganingizni yozing va keling suhbatlashamiz! 💬'
   },
 
   'settingsMessage': {
@@ -87,6 +88,7 @@ export const LOCALIZATION_KEYS = {
     'ru': '🤖 <b>Выбор модели</b>\n\n<b>Текущая модель:</b> {currentModel}\n\n<i>Lite:</i> Быстрая и экономичная модель\n<i>Pro:</i> Продвинутая модель с поддержкой изображений\n<i>X:</i> Самая мощная модель с поддержкой изображений\n\nВыберите модель:',
     'uz': '🤖 <b>Model tanlash</b>\n\n<b>Joriy model:</b> {currentModel}\n\n<i>Lite:</i> Tez va tejamkor model\n<i>Pro:</i> Rasm qo\'llab-quvvatlaydigan ilg\'or model\n<i>X:</i> Rasm qo\'llab-quvvatlaydigan eng kuchli model\n\nModel tanlang:'
   },
+
 
   // Уведомления и статусы
   'languageChanged': {
@@ -163,14 +165,14 @@ export const LOCALIZATION_KEYS = {
 
   'defaultImageQuery': {
     'en': 'What do you see in this image?',
-    'ru': 'Что вы видите на этом изображении?',
-    'uz': 'Bu rasmda nimani ko\'ryapsiz?'
+    'ru': 'Что ты видишь на этом изображении?',
+    'uz': 'Bu rasmda nimani ko\'ryapsan?'
   },
 
   'settingsTitle': {
     'en': '⚙️ Settings',
     'ru': '⚙️ Настройки',
-    'uz': '⚙️ Sozlamalar'
+    'uz': '⚙️ Parametrlar'
   },
 
   'settingsCurrentModel': {
@@ -188,7 +190,7 @@ export const LOCALIZATION_KEYS = {
   'settingsHistoryCount': {
     'en': '📊 Messages in history: {count}',
     'ru': '📊 Сообщений в истории: {count}',
-    'uz': '📊 Tarixtagi xabarlar: {count}'
+    'uz': '📊 Chat tarixi: {count}'
   },
 
   'settingsChooseAction': {
