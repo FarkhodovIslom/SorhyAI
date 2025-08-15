@@ -16,6 +16,12 @@ export const LOCALIZATION_KEYS = {
     'ru': 'Модель',
     'uz': 'Model'
   },
+
+  'closeBtn': {
+    'en': 'Close',
+    'ru': 'Закрыть',
+    'uz': 'Yopish'
+  },
   
   'clearHistoryBtn': {
     'en': 'Clear History',

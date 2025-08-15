@@ -204,7 +204,7 @@ export class CommandHandler {
   /**
    * Настройка обработчиков callback query
    */
-  setupCallbackHandlers() {
+setupCallbackHandlers() {
     // Основные настройки
     this.commandComposer.callbackQuery(/^settings_/, this.createCallbackHandler(async (ctx) => {
       const action = ctx.callbackQuery.data;
@@ -217,7 +217,8 @@ export class CommandHandler {
         'settings_model': () => this.handleSettingsModel(chatId, ctx),
         'settings_reset': () => this.handleSettingsReset(chatId, ctx),
         'settings_help': () => this.handleSettingsHelp(chatId, ctx),
-        'settings_back': () => this.handleSettings(chatId, ctx)
+        'settings_back': () => this.handleSettings(chatId, ctx),
+        'settings_close': () => this.handleSettingsClose(chatId, ctx)
       };
       
       const handler = actionHandlers[action];
@@ -448,6 +449,20 @@ export class CommandHandler {
       parse_mode: 'HTML',
       reply_markup: new InlineKeyboard().text(backButton, 'settings_back')
     });
+  }
+
+    /**
+   * Обработчик закрытия настроек
+   */
+  async handleSettingsClose(chatId, ctx) {
+    try {
+      await ctx.deleteMessage();
+    } catch (error) {
+      // Если не удается удалить сообщение, просто отвечаем
+      const user = await this.getUser(chatId);
+      const closedMessage = getLocalized(chatId, new Map([[chatId, user.language]]), 'settingsClosed');
+      await ctx.editMessageText(closedMessage);
+    }
   }
 
   /**

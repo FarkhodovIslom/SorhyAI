@@ -35,6 +35,10 @@ export class KeyboardService {
     const helpBtn = getLocalized(user.chatId || 0, userLangMap, 'helpBtn');
     keyboard.text(`❓ ${helpBtn}`, 'settings_help').row();
     
+    // Кнопка закрыть
+    const closeBtn = getLocalized(user.chatId || 0, userLangMap, 'closeBtn');
+    keyboard.text(`❌ ${closeBtn}`, 'settings_close').row();
+    
     return keyboard;
   }
 
