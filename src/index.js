@@ -8,7 +8,7 @@ import { createServer, startServer } from './server/server.js';
 // Environment validation
 const requiredEnvVars = [
   'OPENROUTER_API_KEY',
-  'TGBOT_API_KEY2', 
+  'TGBOT_API_KEY', 
   'DEV_ACCESS_KEY'
 ];
 
