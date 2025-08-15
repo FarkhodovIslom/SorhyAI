@@ -30,35 +30,43 @@
 
 ```
 SorhyAI_bot/
-├── .DS_Store
 ├── .gitignore
-├── index.js
-├── package-lock.json
 ├── package.json
+├── package-lock.json
 ├── README.md
-├── commands/
-│   ├── command-list-en.txt
-│   └── command-list.txt
-├── config/
-│   └── config.js
-├── database/
-│   └── userManager.js
-├── handlers/
-│   └── commandHandler.js
-├── localization/
-│   ├── keys.js
-│   └── localization.js
+├── docs/
+│   └── command-list-en.txt
 ├── logs/
 │   └── sorhy-log.txt
-├── prompt/
-│   └── systemPrompt.js
-├── public/
-│   └── style.css
-├── services/
-│   └── keyboardService.js
-├── utils/
-│   ├── errorHandler.js
-│   └── logger.js
-└── views/
-    └── index.ejs
+├── src/
+│   ├── index.js
+│   ├── bot/
+│   │   ├── config/
+│   │   │   └── config.js
+│   │   ├── handlers/
+│   │   │   └── commandHandler.js
+│   │   ├── localization/
+│   │   │   ├── keys.js
+│   │   │   └── localization.js
+│   │   ├── prompt/
+│   │   │   └── systemPrompt.js
+│   │   └── services/
+│   │       └── keyboardService.js
+│   ├── core/
+│   │   ├── database/
+│   │   │   └── userManager.js
+│   │   └── utils/
+│   │       ├── errorHandler.js
+│   │       └── logger.js
+│   └── server/
+│       ├── server.js
+│       ├── public/
+│       │   ├── assets/
+│       │   │   └── SorhyAI logo.png
+│       │   └── css/
+│       │       └── style.css
+│       ├── routes/
+│       │   └── adminRoutes.js
+│       └── views/
+│           └── index.ejs
 ```

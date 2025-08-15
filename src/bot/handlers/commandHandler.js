@@ -11,7 +11,13 @@ import {
   LANGUAGES
 } from '../localization/localization.js';
 import { KeyboardService } from '../services/keyboardService.js';
-import { ErrorHandler } from '../utils/errorHandler.js';
+import { 
+  handleError, 
+  withErrorHandling, 
+  handleTelegramError,
+  BotError,
+  ValidationError
+} from '../../core/utils/errorHandler.js';
 
 /**
  * Middleware для проверки прав разработчика
@@ -41,9 +47,6 @@ export class CommandHandler {
     // Кэш пользователей для оптимизации
     this.userCache = new Map();
     
-    // Инициализация обработчиков ошибок
-    this.errorHandler = new ErrorHandler();
-    
     this.setupGrammyCommands();
     this.setupCallbackHandlers();
     
@@ -55,7 +58,7 @@ export class CommandHandler {
    * Получение пользователя с кэшированием
    */
   async getUser(chatId) {
-    try {
+    const getUserWithCache = withErrorHandling(async () => {
       if (this.userCache.has(chatId)) {
         return this.userCache.get(chatId);
       }
@@ -69,39 +72,36 @@ export class CommandHandler {
       }, 5 * 60 * 1000);
       
       return user;
-    } catch (error) {
-      this.errorHandler.handle(error, 'getUser', { chatId });
-      throw error;
-    }
+    }, { operation: 'getUser', chatId });
+
+    return await getUserWithCache();
   }
 
   /**
    * Сохранение пользователя с обновлением кэша
    */
   async saveUser(chatId, user) {
-    try {
+    const saveUserWithHandling = withErrorHandling(async () => {
       await this.userManager.saveUser(chatId, user);
       this.userCache.set(chatId, user);
-    } catch (error) {
-      this.errorHandler.handle(error, 'saveUser', { chatId });
-      throw error;
-    }
+    }, { operation: 'saveUser', chatId });
+
+    return await saveUserWithHandling();
   }
 
   /**
    * Универсальный метод отправки сообщений
    */
   async sendMessage(chatId, text, options = {}, ctx = null) {
-    try {
+    const sendMessageWithHandling = withErrorHandling(async () => {
       if (ctx) {
         return await ctx.reply(text, options);
       } else {
         return await this.bot.api.sendMessage(chatId, text, options);
       }
-    } catch (error) {
-      this.errorHandler.handle(error, 'sendMessage', { chatId, text });
-      throw error;
-    }
+    }, { operation: 'sendMessage', chatId, textLength: text?.length });
+
+    return await sendMessageWithHandling();
   }
 
   /**
@@ -115,7 +115,11 @@ export class CommandHandler {
       try {
         await ctx.reply(text, options);
       } catch (fallbackError) {
-        this.errorHandler.handle(fallbackError, 'editMessage', { text });
+        handleError(fallbackError, { 
+          operation: 'editMessage', 
+          textLength: text?.length,
+          fallbackAttempt: true 
+        });
         throw fallbackError;
       }
     }
@@ -126,64 +130,73 @@ export class CommandHandler {
    */
   setupGrammyCommands() {
     // Команда /start
-    this.commandComposer.command('start', this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('start', this.createCommandHandler(async (ctx) => {
       await this.handleStart(ctx.chat.id, ctx);
     }));
     
     // Команда /reset
-    this.commandComposer.command('reset', this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('reset', this.createCommandHandler(async (ctx) => {
       await this.handleReset(ctx.chat.id, ctx);
     }));
     
     // Команды для моделей
     Object.keys(MODELS).forEach(modelKey => {
       const modelName = modelKey.toLowerCase();
-      this.commandComposer.command(`model_${modelName}`, this.withErrorHandling(async (ctx) => {
+      this.commandComposer.command(`model_${modelName}`, this.createCommandHandler(async (ctx) => {
         await this.handleModelSwitch(modelKey, ctx.chat.id, ctx);
       }));
     });
     
     // Команда /language
-    this.commandComposer.command('language', this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('language', this.createCommandHandler(async (ctx) => {
       await this.handleLanguage(ctx.chat.id, ctx);
     }));
     
     // Команда /settings
-    this.commandComposer.command('settings', this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('settings', this.createCommandHandler(async (ctx) => {
       await this.handleSettings(ctx.chat.id, ctx);
     }));
     
     // Команда /help
-    this.commandComposer.command('help', this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('help', this.createCommandHandler(async (ctx) => {
       await this.handleHelp(ctx.chat.id, ctx);
     }));
     
     // Команда /stats (только для разработчика)
-    this.commandComposer.command('stats', onlyDeveloper, this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command('stats', onlyDeveloper, this.createCommandHandler(async (ctx) => {
       await this.handleStats(ctx.chat.id, ctx);
     }));
   }
 
   /**
-   * Wrapper для обработки ошибок
+   * Создает обработчик команд с улучшенной обработкой ошибок
    */
-  withErrorHandling(handler) {
+  createCommandHandler(handler) {
     return async (ctx) => {
       try {
         await handler(ctx);
       } catch (error) {
-        this.errorHandler.handle(error, 'commandHandler', {
-          chatId: ctx.chat.id,
-          command: ctx.message?.text
-        });
+        // Используем новый Telegram-специфичный обработчик ошибок
+        await handleTelegramError(ctx, error);
         
-        const user = await this.getUser(ctx.chat.id);
-        await this.sendMessage(
-          ctx.chat.id,
-          getLocalized(ctx.chat.id, new Map([[ctx.chat.id, user.language]]), 'errorOccurred'),
-          {},
-          ctx
-        );
+        // Дополнительно отправляем локализованное сообщение об ошибке
+        try {
+          const user = await this.getUser(ctx.chat.id);
+          const errorMessage = getLocalized(
+            ctx.chat.id, 
+            new Map([[ctx.chat.id, user.language]]), 
+            'errorOccurred'
+          );
+          
+          if (!ctx.callbackQuery) {
+            await ctx.reply(errorMessage);
+          }
+        } catch (fallbackError) {
+          handleError(fallbackError, { 
+            operation: 'sendErrorMessage',
+            chatId: ctx.chat.id 
+          });
+        }
       }
     };
   }
@@ -193,7 +206,7 @@ export class CommandHandler {
    */
   setupCallbackHandlers() {
     // Основные настройки
-    this.commandComposer.callbackQuery(/^settings_/, this.withErrorHandling(async (ctx) => {
+    this.commandComposer.callbackQuery(/^settings_/, this.createCallbackHandler(async (ctx) => {
       const action = ctx.callbackQuery.data;
       const chatId = ctx.chat.id;
       
@@ -210,11 +223,13 @@ export class CommandHandler {
       const handler = actionHandlers[action];
       if (handler) {
         await handler();
+      } else {
+        throw new ValidationError(`Unknown settings action: ${action}`, 'action');
       }
     }));
 
     // Выбор модели
-    this.commandComposer.callbackQuery(/^model_/, this.withErrorHandling(async (ctx) => {
+    this.commandComposer.callbackQuery(/^model_/, this.createCallbackHandler(async (ctx) => {
       const action = ctx.callbackQuery.data;
       const chatId = ctx.chat.id;
       const modelName = action.split('_')[1];
@@ -228,79 +243,105 @@ export class CommandHandler {
       
       if (modelKey) {
         await this.handleModelSwitch(modelKey, chatId, ctx, true);
+      } else {
+        throw new ValidationError(`Unknown model: ${modelName}`, 'model');
       }
     }));
 
     // Выбор языка
-    this.commandComposer.callbackQuery(/^lang_/, this.withErrorHandling(async (ctx) => {
+    this.commandComposer.callbackQuery(/^lang_/, this.createCallbackHandler(async (ctx) => {
       const chatId = ctx.chat.id;
       const langCode = ctx.callbackQuery.data.split('_')[1];
       const language = LANGUAGES[langCode];
       
-      if (language) {
-        const user = await this.getUser(chatId);
-        user.language = language;
-        user.updateActivity();
-        await this.saveUser(chatId, user);
-        
-        const successMessage = getLocalized(chatId, new Map([[chatId, language]]), 'languageChanged');
-        await ctx.answerCallbackQuery(successMessage);
-        await this.handleSettings(chatId, ctx);
+      if (!language) {
+        throw new ValidationError(`Unknown language code: ${langCode}`, 'language');
       }
+
+      const user = await this.getUser(chatId);
+      user.language = language;
+      user.updateActivity();
+      await this.saveUser(chatId, user);
+      
+      const successMessage = getLocalized(chatId, new Map([[chatId, language]]), 'languageChanged');
+      await ctx.answerCallbackQuery(successMessage);
+      await this.handleSettings(chatId, ctx);
     }));
+  }
+
+  /**
+   * Создает обработчик callback query с улучшенной обработкой ошибок
+   */
+  createCallbackHandler(handler) {
+    return async (ctx) => {
+      try {
+        await handler(ctx);
+      } catch (error) {
+        await handleTelegramError(ctx, error);
+        
+        // Отвечаем на callback query в случае ошибки
+        try {
+          await ctx.answerCallbackQuery('❌ Произошла ошибка');
+        } catch (answerError) {
+          handleError(answerError, { 
+            operation: 'answerCallbackQuery',
+            chatId: ctx.chat?.id 
+          });
+        }
+      }
+    };
   }
 
   /**
    * Универсальный обработчик переключения моделей
    */
   async handleModelSwitch(modelKey, chatId, ctx = null, fromSettings = false) {
-    try {
-      const user = await this.getUser(chatId);
-      const modelValue = MODELS[modelKey];
-      const modelDisplayName = this.keyboardService.getModelDisplayName(modelValue);
-      
-      if (user.model === modelValue) {
-        if (fromSettings) {
-          const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadySelected');
-          await ctx.answerCallbackQuery(message);
-          return;
-        }
-        
-        await this.sendMessage(
-          chatId, 
-          getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { 
-            model: modelDisplayName 
-          }),
-          {},
-          ctx
-        );
+    if (!MODELS[modelKey]) {
+      throw new ValidationError(`Invalid model key: ${modelKey}`, 'modelKey');
+    }
+
+    const user = await this.getUser(chatId);
+    const modelValue = MODELS[modelKey];
+    const modelDisplayName = this.keyboardService.getModelDisplayName(modelValue);
+    
+    if (user.model === modelValue) {
+      if (fromSettings) {
+        const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadySelected');
+        await ctx.answerCallbackQuery(message);
         return;
       }
-
-      // Переключаем модель
-      user.model = modelValue;
-      user.updateActivity();
-      await this.saveUser(chatId, user);
       
-      if (fromSettings) {
-        const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelChanged', {
+      await this.sendMessage(
+        chatId, 
+        getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { 
+          model: modelDisplayName 
+        }),
+        {},
+        ctx
+      );
+      return;
+    }
+
+    // Переключаем модель
+    user.model = modelValue;
+    user.updateActivity();
+    await this.saveUser(chatId, user);
+    
+    if (fromSettings) {
+      const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelChanged', {
+        model: modelDisplayName
+      });
+      await ctx.answerCallbackQuery(message);
+      await this.handleSettings(chatId, ctx);
+    } else {
+      await this.sendMessage(
+        chatId, 
+        getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { 
           model: modelDisplayName
-        });
-        await ctx.answerCallbackQuery(message);
-        await this.handleSettings(chatId, ctx);
-      } else {
-        await this.sendMessage(
-          chatId, 
-          getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { 
-            model: modelDisplayName
-          }),
-          {},
-          ctx
-        );
-      }
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleModelSwitch', { modelKey, chatId });
-      throw error;
+        }),
+        {},
+        ctx
+      );
     }
   }
 
@@ -308,28 +349,23 @@ export class CommandHandler {
    * Обработчик команды /start
    */
   async handleStart(chatId, ctx = null) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      if (!user.language) {
-        const welcomeText = getLocalized(chatId, new Map([[chatId, 'multi']]), 'selectLanguageWelcome');
-        await this.sendMessage(
-          chatId, 
-          welcomeText,
-          { reply_markup: createLanguageKeyboard() },
-          ctx
-        );
-      } else {
-        await this.sendMessage(
-          chatId, 
-          getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'),
-          {},
-          ctx
-        );
-      }
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleStart', { chatId });
-      throw error;
+    const user = await this.getUser(chatId);
+    
+    if (!user.language) {
+      const welcomeText = getLocalized(chatId, new Map([[chatId, 'multi']]), 'selectLanguageWelcome');
+      await this.sendMessage(
+        chatId, 
+        welcomeText,
+        { reply_markup: createLanguageKeyboard() },
+        ctx
+      );
+    } else {
+      await this.sendMessage(
+        chatId, 
+        getLocalized(chatId, new Map([[chatId, user.language]]), 'startMessage'),
+        {},
+        ctx
+      );
     }
   }
 
@@ -337,28 +373,23 @@ export class CommandHandler {
    * Обработчик команды /settings
    */
   async handleSettings(chatId, ctx = null) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      const settingsText = getLocalized(chatId, new Map([[chatId, user.language]]), 'settingsMessage', {
-        currentModel: this.keyboardService.getModelDisplayName(user.model),
-        currentLanguage: this.keyboardService.getLanguageDisplayName(user.language),
-        historyCount: user.history.length
-      });
+    const user = await this.getUser(chatId);
+    
+    const settingsText = getLocalized(chatId, new Map([[chatId, user.language]]), 'settingsMessage', {
+      currentModel: this.keyboardService.getModelDisplayName(user.model),
+      currentLanguage: this.keyboardService.getLanguageDisplayName(user.language),
+      historyCount: user.history.length
+    });
 
-      const options = {
-        parse_mode: 'HTML',
-        reply_markup: this.keyboardService.createSettingsKeyboard(user)
-      };
+    const options = {
+      parse_mode: 'HTML',
+      reply_markup: this.keyboardService.createSettingsKeyboard(user)
+    };
 
-      if (ctx && ctx.callbackQuery) {
-        await this.editMessage(ctx, settingsText, options);
-      } else {
-        await this.sendMessage(chatId, settingsText, options, ctx);
-      }
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleSettings', { chatId });
-      throw error;
+    if (ctx && ctx.callbackQuery) {
+      await this.editMessage(ctx, settingsText, options);
+    } else {
+      await this.sendMessage(chatId, settingsText, options, ctx);
     }
   }
 
@@ -366,162 +397,121 @@ export class CommandHandler {
    * Обработчик настройки языка
    */
   async handleSettingsLanguage(chatId, ctx) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      const text = getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage');
-      
-      await this.editMessage(ctx, text, {
-        reply_markup: createLanguageKeyboard(true) // true для добавления кнопки "Назад"
-      });
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleSettingsLanguage', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    
+    const text = getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage');
+    
+    await this.editMessage(ctx, text, {
+      reply_markup: createLanguageKeyboard(true) // true для добавления кнопки "Назад"
+    });
   }
 
   /**
    * Обработчик настройки модели
    */
   async handleSettingsModel(chatId, ctx) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      const text = getLocalized(chatId, new Map([[chatId, user.language]]), 'selectModel', {
-        currentModel: this.keyboardService.getModelDisplayName(user.model)
-      });
+    const user = await this.getUser(chatId);
+    
+    const text = getLocalized(chatId, new Map([[chatId, user.language]]), 'selectModel', {
+      currentModel: this.keyboardService.getModelDisplayName(user.model)
+    });
 
-      await this.editMessage(ctx, text, {
-        parse_mode: 'HTML',
-        reply_markup: this.keyboardService.createModelKeyboard(user.model, user.language)
-      });
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleSettingsModel', { chatId });
-      throw error;
-    }
+    await this.editMessage(ctx, text, {
+      parse_mode: 'HTML',
+      reply_markup: this.keyboardService.createModelKeyboard(user.model, user.language)
+    });
   }
 
   /**
    * Обработчик сброса истории из настроек
    */
   async handleSettingsReset(chatId, ctx) {
-    try {
-      const user = await this.getUser(chatId);
-      user.history = [];
-      await this.saveUser(chatId, user);
-      
-      const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'historyCleared');
-      await ctx.answerCallbackQuery(message);
-      await this.handleSettings(chatId, ctx);
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleSettingsReset', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    user.history = [];
+    await this.saveUser(chatId, user);
+    
+    const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'historyCleared');
+    await ctx.answerCallbackQuery(message);
+    await this.handleSettings(chatId, ctx);
   }
 
   /**
    * Обработчик помощи из настроек
    */
   async handleSettingsHelp(chatId, ctx) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      const helpText = getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage');
-      
-      const backButton = getLocalized(chatId, new Map([[chatId, user.language]]), 'backToSettings');
-      
-      await this.editMessage(ctx, helpText, {
-        parse_mode: 'HTML',
-        reply_markup: new InlineKeyboard().text(backButton, 'settings_back')
-      });
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleSettingsHelp', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    
+    const helpText = getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage');
+    const backButton = getLocalized(chatId, new Map([[chatId, user.language]]), 'backToSettings');
+    
+    await this.editMessage(ctx, helpText, {
+      parse_mode: 'HTML',
+      reply_markup: new InlineKeyboard().text(backButton, 'settings_back')
+    });
   }
 
   /**
    * Обработчик команды /reset
    */
   async handleReset(chatId, ctx = null) {
-    try {
-      const user = await this.getUser(chatId);
-      user.history = [];
-      await this.saveUser(chatId, user);
-      
-      await this.sendMessage(
-        chatId, 
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'resetHistory'),
-        {},
-        ctx
-      );
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleReset', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    user.history = [];
+    await this.saveUser(chatId, user);
+    
+    await this.sendMessage(
+      chatId, 
+      getLocalized(chatId, new Map([[chatId, user.language]]), 'resetHistory'),
+      {},
+      ctx
+    );
   }
 
   /**
    * Обработчик команды /language
    */
   async handleLanguage(chatId, ctx = null) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      await this.sendMessage(
-        chatId,
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage'),
-        { reply_markup: createLanguageKeyboard() },
-        ctx
-      );
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleLanguage', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    
+    await this.sendMessage(
+      chatId,
+      getLocalized(chatId, new Map([[chatId, user.language]]), 'selectLanguage'),
+      { reply_markup: createLanguageKeyboard() },
+      ctx
+    );
   }
 
   /**
    * Обработчик команды /help
    */
   async handleHelp(chatId, ctx = null) {
-    try {
-      const user = await this.getUser(chatId);
-      
-      await this.sendMessage(
-        chatId, 
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage'), 
-        { parse_mode: 'HTML' },
-        ctx
-      );
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleHelp', { chatId });
-      throw error;
-    }
+    const user = await this.getUser(chatId);
+    
+    await this.sendMessage(
+      chatId, 
+      getLocalized(chatId, new Map([[chatId, user.language]]), 'helpMessage'), 
+      { parse_mode: 'HTML' },
+      ctx
+    );
   }
 
   /**
    * Обработчик команды /stats (только для разработчика)
    */
   async handleStats(chatId, ctx = null) {
-    try {
-      const stats = await this.userManager.getStats();
-      const memUsage = process.memoryUsage();
-      const uptime = Math.floor(process.uptime() / 60); // в минутах
-      
-      const statsMessage = getLocalized(chatId, new Map([[chatId, 'ru']]), 'statsMessage', {
-        totalUsers: stats.totalUsers,
-        activeUsers: stats.activeUsers,
-        cachedUsers: stats.cachedUsers,
-        memoryUsage: Math.round(memUsage.heapUsed / 1024 / 1024),
-        uptime: uptime,
-        dbStatus: stats.isConnected ? '✅ Подключена' : '❌ Отключена'
-      });
-      
-      await this.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' }, ctx);
-    } catch (error) {
-      this.errorHandler.handle(error, 'handleStats', { chatId });
-      throw error;
-    }
+    const stats = await this.userManager.getStats();
+    const memUsage = process.memoryUsage();
+    const uptime = Math.floor(process.uptime() / 60); // в минутах
+    
+    const statsMessage = getLocalized(chatId, new Map([[chatId, 'ru']]), 'statsMessage', {
+      totalUsers: stats.totalUsers,
+      activeUsers: stats.activeUsers,
+      cachedUsers: stats.cachedUsers,
+      memoryUsage: Math.round(memUsage.heapUsed / 1024 / 1024),
+      uptime: uptime,
+      dbStatus: stats.isConnected ? '✅ Подключена' : '❌ Отключена'
+    });
+    
+    await this.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' }, ctx);
   }
 
   /**
@@ -547,7 +537,7 @@ export class CommandHandler {
    * @returns {boolean} - true если команда обработана
    */
   async handleCommand(chatId, command) {
-    try {
+    const handleLegacyCommand = withErrorHandling(async () => {
       // Создаем минимальный контекст для legacy вызовов
       const legacyCtx = {
         chat: { id: chatId },
@@ -565,8 +555,8 @@ export class CommandHandler {
 
       // Обработка команд моделей
       Object.keys(MODELS).forEach(modelKey => {
-        const command = `/model_${modelKey.toLowerCase()}`;
-        commandHandlers[command] = () => this.handleModelSwitch(modelKey, chatId, legacyCtx);
+        const cmd = `/model_${modelKey.toLowerCase()}`;
+        commandHandlers[cmd] = () => this.handleModelSwitch(modelKey, chatId, legacyCtx);
       });
 
       const handler = commandHandlers[command];
@@ -587,9 +577,18 @@ export class CommandHandler {
       }
       
       return false;
+    }, { operation: 'handleLegacyCommand', chatId, command });
+
+    try {
+      return await handleLegacyCommand();
     } catch (error) {
-      this.errorHandler.handle(error, 'handleCommand', { chatId, command });
-      return true; // Возвращаем true, чтобы показать, что команда была "обработана"
+      // Логируем ошибку и возвращаем true, чтобы показать что команда обработана
+      handleError(error, { 
+        operation: 'handleLegacyCommand', 
+        chatId, 
+        command 
+      });
+      return true;
     }
   }
 
@@ -611,7 +610,7 @@ export class CommandHandler {
   addCommand(command, handler) {
     const cmdName = command.startsWith('/') ? command.slice(1) : command;
     
-    this.commandComposer.command(cmdName, this.withErrorHandling(async (ctx) => {
+    this.commandComposer.command(cmdName, this.createCommandHandler(async (ctx) => {
       await handler(ctx.chat.id, ctx);
     }));
   }
