@@ -24,7 +24,7 @@ export function createBot(userManager) {
     baseURL: 'https://openrouter.ai/api/v1',
   });
 
-  const bot = new Bot(process.env.TGBOT_API_KEY);
+  const bot = new Bot(process.env.TGBOT_API_KEY2);
 
   // Bot state
   let botUsername = '';
@@ -68,7 +68,22 @@ export function createBot(userManager) {
       return await next();
     }
     
-    // Apply rate limit only to regular messages
+    // ДОБАВЛЯЕМ: Skip сообщения в группах, где бот не должен отвечать
+    if (ctx.message && ctx.chat?.type?.endsWith('group')) {
+      const messageText = ctx.message?.text || ctx.message?.caption || '';
+      const botWasMentioned = ctx.entities()
+        ?.some(entity => entity.type === 'mention' && 
+              messageText?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`) || false;
+      const isReplyToBot = ctx.message?.reply_to_message?.from?.id === botId;
+      const isAnonymousBotMessage = ctx.message?.sender_chat?.id === botId;
+      
+      // Если в группе и бот не упомянут - пропускаем rate limit
+      if (!botWasMentioned && !isReplyToBot && !isAnonymousBotMessage) {
+        return await next();
+      }
+    }
+    
+    // Apply rate limit только к сообщениям, на которые бот будет отвечать
     if (ctx.message) {
       const userId = ctx.from.id.toString();
       const now = Date.now();
@@ -164,26 +179,30 @@ export function createBot(userManager) {
    * Determines if bot should respond in group chats
    */
   function shouldRespondInGroup(ctx) {
-    if (!ctx.chat.type.endsWith('group')) return true;
+    if (!ctx.chat?.type?.endsWith('group')) return true;
+    const messageText = ctx.message?.text || ctx.message?.caption || '';
     
     const botWasMentioned = ctx.entities()
-      .some(entity => entity.type === 'mention' && 
-             ctx.message.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`);
+      ?.some(entity => entity.type === 'mention' && 
+            messageText?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`) || false;
     
     const isReplyToBot = ctx.message?.reply_to_message?.from?.id === botId;
     
-    return botWasMentioned || isReplyToBot;
+    const isAnonymousBotMessage = ctx.message?.sender_chat?.id === botId;
+    
+    return botWasMentioned || isReplyToBot || isAnonymousBotMessage;
   }
 
   /**
    * Extracts clean message text, removing bot mentions in groups
    */
   function getMessageText(ctx) {
-    let userMessage = ctx.message?.text || '';
-    const isGroup = ctx.chat.type.endsWith('group');
+    let userMessage = ctx.message?.text || ctx.message?.caption || '';
+    const isGroup = ctx.chat?.type?.endsWith('group') || false;
+    const messageText = ctx.message?.text || ctx.message?.caption || '';
     const botWasMentioned = ctx.entities()
-      .some(entity => entity.type === 'mention' && 
-             ctx.message.text?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`);
+      ?.some(entity => entity.type === 'mention' && 
+            messageText?.slice(entity.offset, entity.offset + entity.length) === `@${botUsername}`) || false;
     
     if (isGroup && botWasMentioned) {
       userMessage = userMessage.replace(`@${botUsername}`, '').trim();
@@ -368,6 +387,7 @@ export function createBot(userManager) {
 
   // Handler for unsupported message types
   bot.on('message', async (ctx) => {
+    if (!shouldRespondInGroup(ctx)) return;
     if (!ctx.message.text && !ctx.message.photo) {
       const message = getLocalized(ctx.chat.id, new Map([[ctx.chat.id, ctx.user.language]]), 'onlyTextAndImages');
       await ctx.reply(message);
