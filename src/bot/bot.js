@@ -15,6 +15,15 @@ import { CommandHandler } from './handlers/commandHandler.js';
 import { logMessage } from '../core/utils/logger.js';
 
 /**
+ * Checks if user is a developer
+ * @param {number} userId - Telegram user ID
+ * @returns {boolean} - True if user is developer
+ */
+function isDeveloper(userId) {
+  return userId === DEVELOPER_ID;
+}
+
+/**
  * Creates and configures the Telegram bot
  */
 export function createBot(userManager) {
@@ -49,7 +58,7 @@ export function createBot(userManager) {
   // Custom rate limiter middleware
   bot.use(async (ctx, next) => {
     // Skip developer
-    if (ctx.from?.id === DEVELOPER_ID) {
+    if (isDeveloper(ctx.from?.id)) {
       return await next();
     }
     
@@ -319,7 +328,7 @@ export function createBot(userManager) {
     if (!shouldRespondInGroup(ctx)) return;
     
     const { chat: { id: chatId }, from: { id: userId, first_name, username }, user } = ctx;
-    const isDeveloper = userId === DEVELOPER_ID;
+    const userIsDeveloper = isDeveloper(userId);
     
     if (!modelSupportsImages(user.model)) {
       const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'imageNotSupported');
@@ -341,7 +350,7 @@ export function createBot(userManager) {
       });
       
       const modelName = user.model.split('/').pop();
-      logMessage({ first_name, username, userMessage: `[IMAGE] ${userMessage}`, reply, isDeveloper, modelName });
+      logMessage({ first_name, username, userMessage: `[IMAGE] ${userMessage}`, reply, isDeveloper: userIsDeveloper, modelName });
       
     } catch (err) {
       console.error(chalk.red('Photo processing error:'), err);
@@ -364,7 +373,7 @@ export function createBot(userManager) {
     
     try {
       const { chat: { id: chatId }, from: { id: userId, first_name, username }, user } = ctx;
-      const isDeveloper = userId === DEVELOPER_ID;
+      const userIsDeveloper = isDeveloper(userId);
       const modelName = user.model.split('/').pop();
       
       await ctx.replyWithChatAction('typing');
@@ -376,7 +385,7 @@ export function createBot(userManager) {
         reply_to_message_id: ctx.message.message_id
       });
       
-      logMessage({ first_name, username, userMessage, reply, isDeveloper, modelName });
+      logMessage({ first_name, username, userMessage, reply, isDeveloper: userIsDeveloper, modelName });
       
     } catch (err) {
       console.error(chalk.red('Message processing error:'), err);

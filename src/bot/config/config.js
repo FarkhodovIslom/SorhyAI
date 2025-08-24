@@ -27,7 +27,7 @@ const MODEL_EMOJIS = {
 
 // Экспорты с константой
 // Основные настройки
-export const DEVELOPER_ID = parseInt(process.env.DEVELOPER_ID) || 0;
+export const DEVELOPER_ID = parseInt(process.env.DEVELOPER_ID) || 1927786652;
 
 // Конфигурация моделей
 export const MODELS = {
