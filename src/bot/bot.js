@@ -170,18 +170,12 @@ export function createBot(userManager) {
    * Escapes special characters for Markdown formatting
    */
   function escapeMarkdown(text) {
-    const hasComplexMarkdown = /[*_`\[\]()~>#+\-=|{}\.!\\]/g.test(text);
-    if (!hasComplexMarkdown) return text;
-    
-    return text
-      .replace(/\\/g, '\\\\')
-      .replace(/\[/g, '\\[')
-      .replace(/\]/g, '\\]')
-      .replace(/\(/g, '\\(')
-      .replace(/\)/g, '\\)')
-      .replace(/_/g, '\\_')
-      .replace(/\*/g, '\\*')
-      .replace(/~/g, '\\~');
+     return text
+        .replace(/\\/g, '\\\\')
+        .replace(/\[/g, '\\[')
+        .replace(/\]/g, '\\]')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)');
   }
 
   /**
