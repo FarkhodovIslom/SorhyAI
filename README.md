@@ -13,14 +13,83 @@ SorhyAI - это персональный ИИ-бот, который предо
 
 ---
 
+## 🐳 Docker Deployment
+
+### Prerequisites
+- Docker installed 
+- Docker Compose installed
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/FarkhodovIslom/SorhyAI_bot.git
+   cd SorhyAI_bot
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` file and add your API keys:
+   ```
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   TGBOT_API_KEY=your_telegram_bot_api_key_here
+   DEV_ACCESS_KEY=your_developer_access_key_here
+   ```
+
+3. **Start with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+
+   Or use the convenience script:
+   ```bash
+   ./docker-start.sh
+   ```
+
+### Docker Commands
+
+- **Start in background**: `docker-compose up -d --build`
+- **Stop containers**: `docker-compose down`
+- **View logs**: `docker-compose logs -f`
+- **Rebuild containers**: `docker-compose build --no-cache`
+
+### Environment Variables
+
+Required environment variables:
+- `OPENROUTER_API_KEY` - Your OpenRouter API key
+- `TGBOT_API_KEY` - Your Telegram Bot API key
+- `DEV_ACCESS_KEY` - Developer access key
+
+Optional environment variables:
+- `MONGODB_URI` - Custom MongoDB connection string
+- `MODEL_LITE`, `MODEL_PRO`, `MODEL_X` - Model configurations
+- `DEVELOPER_ID` - Developer Telegram ID
+- `LOG_LEVEL` - Logging level (default: info)
+- `NODE_ENV` - Node environment (default: production)
+
+### Ports
+- Application: 3000
+- MongoDB: 27017
+
+---
+
 ### 📁 Проектная структура
 
 ```
 SorhyAI_bot/
+├── .dockerignore
+├── .env.example
+├── docker-compose.yml
+├── Dockerfile
+├── docker-start.sh
 ├── .gitignore
 ├── package.json
 ├── package-lock.json
 ├── README.md
+├── Procfile
+├── start.sh
 ├── docs/
 │   └── command-list-en.txt
 ├── logs/
