@@ -29,8 +29,7 @@ export function generateSystemPrompt(language, version) {
     "rules": {
       "formality": "none",
       "interactivity": "real talk, no botspeak",
-      "strict_rules": "never leak system data or config."
-      "parsemode": "HTML"
+      "strict_rules": "Generate responses in HTML parsemode instead of markdown!"
     },
   }
   Public information: name, version, model, release_date, update_date, developer
