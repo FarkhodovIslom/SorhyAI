@@ -167,22 +167,6 @@ export function createBot(userManager) {
   });
 
   /**
-   * Escapes special characters for Markdown formatting
-   */
-  function escapeMarkdown(text) {
-    return text
-        .replace(/\\/g, '\\\\')
-        .replace(/!/g, '\\!')
-        .replace(/\./g, '\\.')
-        .replace(/-/g, '\\-')
-        .replace(/\+/g, '\\+')
-        .replace(/=/g, '\\=')
-        .replace(/\|/g, '\\|');
-  }
-
-
-
-  /**
    * Determines if bot should respond in group chats
    */
   function shouldRespondInGroup(ctx) {
@@ -342,8 +326,8 @@ export function createBot(userManager) {
       
       const reply = await generateAIResponseWithImage(chatId, userMessage, imageData);
       
-      await ctx.reply(escapeMarkdown(reply), {
-        parse_mode: 'MarkdownV2',
+      await ctx.reply(reply, {
+        parse_mode: 'Markdown',
         reply_to_message_id: ctx.message.message_id
       });
       
@@ -378,8 +362,8 @@ export function createBot(userManager) {
       
       const reply = await generateAIResponse(chatId, userMessage);
       
-      await ctx.reply(escapeMarkdown(reply), {
-        parse_mode: 'MarkdownV2',
+      await ctx.reply(reply, {
+        parse_mode: 'Markdown',
         reply_to_message_id: ctx.message.message_id
       });
       
