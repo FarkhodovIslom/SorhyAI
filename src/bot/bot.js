@@ -339,7 +339,7 @@ export function createBot(userManager) {
       const reply = await generateAIResponseWithImage(chatId, userMessage, imageData);
       
       await ctx.reply(escapeMarkdown(reply), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_to_message_id: ctx.message.message_id
       });
       
@@ -375,7 +375,7 @@ export function createBot(userManager) {
       const reply = await generateAIResponse(chatId, userMessage);
       
       await ctx.reply(escapeMarkdown(reply), {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_to_message_id: ctx.message.message_id
       });
       

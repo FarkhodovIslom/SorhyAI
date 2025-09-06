@@ -67,14 +67,14 @@ export const LOCALIZATION_KEYS = {
   
   'startMessage': {
     'en': '👋 Hey there! I\'m Sorhy AI Bot!\n\nLooking for a all-in-one chat buddy? You\'ve found the right AI! I love deep conversations, casual banter, creative brainstorming, even coding!\n\n💬 Chat Modes:\n🟢 Lite - Quick & witty responses\n🔵 Pro - Deeper conversations + can see images you share\n🟣 X - Most thoughtful discussions & solving complex problems\n\nSo... what\'s up? Drop me a message or use /settings to customize how we chat! 😊',
-    'ru': '👋 Привет! Я Sorhy AI Bot!\n\nИщешь All-in-one чатбота? Ты по адресу! Обожаю глубокие разговоры, непринужденную болтовню, креативные идеи или даже могу помочь с кодом!\n\n💬 Мои модели:\n🟢 Lite - Быстрые и легковесный\n🔵 Pro - Глубокие беседы + могу видеть твои картинки\n🟣 X - Самые вдумчивые диалоги и глубокий анализ кода, сложных задач и тд.\n\nТак... как дела? Пиши что на душе или жми /settings для настройки! 😊',
+    'ru': '👋 Привет! Я Sorhy AI Bot!\n\nИщешь All-in-one чатбота? Ты по адресу! Обожаю глубокие разговоры, непринужденную болтовню, креативные идеи или даже могу помочь с кодом!\n\n💬 Мои модели:\n🟢 Lite - Быстрый и легковесный\n🔵 Pro - Глубокие беседы + могу видеть твои картинки\n🟣 X - Самые вдумчивые диалоги и глубокий анализ кода, сложных задач и тд.\n\nТак... как дела? Пиши что на душе или жми /settings для настройки! 😊',
     'uz': '👋 Salom! Men Sorhy AI Bot!\n\nAll-in-one Chatbot qidiryapsizmi? To\'g\'ri joyda siz! Men chuqur suhbatlar, erkin gaplashish, ijodiy g\'oyalar haqida va hatto kodham yoza olaman!.\n\n💬 Mening modellarim:\n🟢 Lite - Tez va Yengil\n🔵 Pro - Chuqur suhbatlar + rasmlaringizni ko\'ra olaman\n🟣 X - Chuqur dialoglar va qiyin algoritm va masalalarni tushunish\n\nXo\'sh... nima haqida gaplashamiz? Parametrlar uchun /settings dan foydalaning! 😊'
   },
 
   'helpMessage': {
-    'en': '🛠️ <b>Commands & Stuff:</b>\n\n/settings - Customize your chat experience\n/start - Restart our conversation\n/reset - Fresh start (bye bye my memory! 😄)\n/language - Switch languages\n/help - You\'re looking at it! 😆\n\n<b>Switch Models:</b>\n/model_lite - Fast and lighweight 🏃‍♂️\n/model_pro - Smart + sees your pics 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>What I can do:</b>\n• Chat about literally anything\n• Look at your images and tell you what\'s up\n• Talk in multiple languages\n• Coding, bug fixing and problem solving!\n\nJust drop me a line and let\'s get this conversation rolling! 💬',
-    'ru': '🛠️ <b>Команды и всякое:</b>\n\n/settings - Настрой бота под себя\n/start - Перезапустить меня\n/reset - Начать с чистого листа (стереть мою память 😄)\n/language - Сменить язык\n/help - Ты это сейчас читаешь! 😆\n\n<b>Переключение моделей:</b>\n/model_lite - Легкая и быстрая 🏃‍♂️\n/model_pro - Умная + видит твои картинки 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>Что я умею:</b>\n• Болтать вообще о чем угодно\n• Смотреть на твои фотки и рассказывать что там\n• Говорить на разных языках\n• Кодить и даже багфиксы!\n\nПросто пиши что в голову придет, и погнали общаться! 💬',
-    'uz': '🛠️ <b>Buyruqlar va boshqalar:</b>\n\n/settings - Chatni o\'zingizga moslang\n/start - Botni qayta boshlash\n/reset - Chat tarixini tozalash (хotiramni tozalash 😄)\n/language - Tilni almashtirish\n/help - Hozir shuni o\'qiyapsiz! 😆\n\n<b>Modellarni almashtirish:</b>\n/model_lite - Tezroq va yengilroq 🏃‍♂️\n/model_pro - Aqlli + rasmlaringizni ko\'radi 📸\n/model_x - 🤫😮‍💨🧠🗿\n\n<b>Nima qila olaman:</b>\n• Har qanday narsa haqida gaplashish\n• Rasmlarni ko\'ra olaman \n• Turli tillarda gaplasha olaman\n• Coding va bug fixing!\n\nXohlaganingizni yozing va keling suhbatlashamiz! 💬'
+    'en': '🛠️ <b>Commands & Stuff:</b>\n\n/settings - Customize your chat experience\n/start - Restart our conversation\n/reset - Fresh start (bye bye my memory! 😄)\n/language - Switch languages\n/help - You\'re looking at it! 😆\n\n<b>Switch Models:</b>\n/model_lite - Fast and lighweight 🏃‍♂️\n/model_pro - Smart + sees your pics 📸\n/model_x - Most powerful model\n\n<b>What I can do:</b>\n• Chat about literally anything\n• Look at your images and tell you what\'s up\n• Talk in multiple languages\n• Coding, bug fixing and problem solving!\n\nJust drop me a line and let\'s get this conversation rolling! 💬',
+    'ru': '🛠️ <b>Команды и всякое:</b>\n\n/settings - Настрой бота под себя\n/start - Перезапустить меня\n/reset - Начать с чистого листа (стереть мою память 😄)\n/language - Сменить язык\n/help - Ты это сейчас читаешь! 😆\n\n<b>Переключение моделей:</b>\n/model_lite - Легкая и быстрая 🏃‍♂️\n/model_pro - Умная + видит твои картинки 📸\n/model_x - Самый мощный\n\n<b>Что я умею:</b>\n• Болтать вообще о чем угодно\n• Смотреть на твои фотки и рассказывать что там\n• Говорить на разных языках\n• Кодить и даже багфиксы!\n\nПросто пиши что в голову придет, и погнали общаться! 💬',
+    'uz': '🛠️ <b>Buyruqlar va boshqalar:</b>\n\n/settings - Chatni o\'zingizga moslang\n/start - Botni qayta boshlash\n/reset - Chat tarixini tozalash (хotiramni tozalash 😄)\n/language - Tilni almashtirish\n/help - Hozir shuni o\'qiyapsiz! 😆\n\n<b>Modellarni almashtirish:</b>\n/model_lite - Tezroq va yengilroq 🏃‍♂️\n/model_pro - Aqlli + rasmlaringizni ko\'radi 📸\n/model_x - Eng kuchli model\n\n<b>Nima qila olaman:</b>\n• Har qanday narsa haqida gaplashish\n• Rasmlarni ko\'ra olaman \n• Turli tillarda gaplasha olaman\n• Coding va bug fixing!\n\nXohlaganingizni yozing va keling suhbatlashamiz! 💬'
   },
 
   'settingsMessage': {
@@ -96,7 +96,7 @@ export const LOCALIZATION_KEYS = {
   },
 
 
-  // Уведомления и статусы
+  // Notification and status
   'languageChanged': {
     'en': '🌍 Language changed to English!',
     'ru': '🌍 Язык изменен на русский!',
@@ -146,9 +146,9 @@ export const LOCALIZATION_KEYS = {
   },
 
   'errorMessage': {
-    'en': '⌛ Sorry, an error occurred. Please try again later.',
-    'ru': '⌛ Извините, произошла ошибка. Попробуйте позже.',
-    'uz': '⌛ Kechirasiz, xatolik yuz berdi. Keyinroq urinib ko\'ring.'
+    'en': '⌛ Sorry, an error occurred. Please try again later or contact with us @Farkhodov_2077',
+    'ru': '⌛ Извините, произошла ошибка. Попробуйте позже или свяжитесь с нами @Farkhodov_2077',
+    'uz': '⌛ Kechirasiz, xatolik yuz berdi. Keyinroq urinib ko\'ring biz bilan bog\'laning @Farkhodov_2077'
   },
 
   'imageNotSupported': {
