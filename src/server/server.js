@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chalk from 'chalk';
-import { PORT } from '../bot/config/config.js';
+import { PORT, IP } from '../bot/config/config.js';
 import { adminRoutes } from './routes/admin.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,14 +40,14 @@ export function createServer(userManager) {
  */
 export function startServer(app) {
   return new Promise((resolve, reject) => {
-    const server = app.listen(PORT, (err) => {
+    const server = app.listen(PORT, IP, (err) => {
       if (err) {
         console.error(chalk.red('❌ Server startup error:'), err);
         reject(err);
         return;
       }
       
-      console.log(chalk.green(`⚡ Server running on port ${PORT}`));
+      console.log(chalk.green(`⚡ Server started on [${IP}]:${PORT}`));
       console.log(chalk.cyan(`📊 Admin panel: /admin/logs/view?key=${process.env.DEV_ACCESS_KEY}`));
       resolve(server);
     });

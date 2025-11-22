@@ -2,7 +2,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Константы
-const PORT = 9000;
+const PORT = process.env.PORT || 8100;
+const IP = process.env.IP || '0.0.0.0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MAX_HISTORY_LENGTH = 75; // Максимум сообщений в истории
@@ -72,6 +73,7 @@ export const LOG_CONFIG = {
 
 export {
   PORT,
+  IP,
   __filename,
   __dirname,
   MAX_HISTORY_LENGTH,
