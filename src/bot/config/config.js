@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Константы
-const PORT = 3000;
+const PORT = 9000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MAX_HISTORY_LENGTH = 75; // Максимум сообщений в истории
