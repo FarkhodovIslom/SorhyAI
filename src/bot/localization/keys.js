@@ -1,5 +1,3 @@
-// localization/keys.js
-
 /**
  * UI localization keys
  */
@@ -11,11 +9,7 @@ export const LOCALIZATION_KEYS = {
     'uz': 'Tilni o\'zgartirish'
   },
   
-  'modelBtn': {
-    'en': 'Model',
-    'ru': 'Модель',
-    'uz': 'Model'
-  },
+
 
   'closeBtn': {
     'en': 'Close',
@@ -72,15 +66,15 @@ export const LOCALIZATION_KEYS = {
   },
 
   'helpMessage': {
-    'en': '🛠️ <b>Commands & Stuff:</b>\n\n/settings - Customize your chat experience\n/start - Restart our conversation\n/reset - Fresh start (bye bye my memory! 😄)\n/language - Switch languages\n/help - You\'re looking at it! 😆\n\n<b>Switch Models:</b>\n/model_lite - Fast and lighweight 🏃‍♂️\n/model_pro - Smart + sees your pics 📸\n/model_x - Most powerful model\n\n<b>What I can do:</b>\n• Chat about literally anything\n• Look at your images and tell you what\'s up\n• Talk in multiple languages\n• Coding, bug fixing and problem solving!\n\nJust drop me a line and let\'s get this conversation rolling! 💬',
-    'ru': '🛠️ <b>Команды и всякое:</b>\n\n/settings - Настрой бота под себя\n/start - Перезапустить меня\n/reset - Начать с чистого листа (стереть мою память 😄)\n/language - Сменить язык\n/help - Ты это сейчас читаешь! 😆\n\n<b>Переключение моделей:</b>\n/model_lite - Легкая и быстрая 🏃‍♂️\n/model_pro - Умная + видит твои картинки 📸\n/model_x - Самый мощный\n\n<b>Что я умею:</b>\n• Болтать вообще о чем угодно\n• Смотреть на твои фотки и рассказывать что там\n• Говорить на разных языках\n• Кодить и даже багфиксы!\n\nПросто пиши что в голову придет, и погнали общаться! 💬',
-    'uz': '🛠️ <b>Buyruqlar va boshqalar:</b>\n\n/settings - Chatni o\'zingizga moslang\n/start - Botni qayta boshlash\n/reset - Chat tarixini tozalash (хotiramni tozalash 😄)\n/language - Tilni almashtirish\n/help - Hozir shuni o\'qiyapsiz! 😆\n\n<b>Modellarni almashtirish:</b>\n/model_lite - Tezroq va yengilroq 🏃‍♂️\n/model_pro - Aqlli + rasmlaringizni ko\'radi 📸\n/model_x - Eng kuchli model\n\n<b>Nima qila olaman:</b>\n• Har qanday narsa haqida gaplashish\n• Rasmlarni ko\'ra olaman \n• Turli tillarda gaplasha olaman\n• Coding va bug fixing!\n\nXohlaganingizni yozing va keling suhbatlashamiz! 💬'
+    'en': '🛠️ <b>Commands & Stuff:</b>\n\n/settings - Customize your chat experience\n/start - Restart our conversation\n/reset - Fresh start (bye bye my memory! 😄)\n/language - Switch languages\n/help - You\'re looking at it! 😆\n\n<b>What I can do:</b>\n• Chat about literally anything\n• Look at your images and tell you what\'s up\n• Talk in multiple languages\n• Coding, bug fixing and problem solving!\n\nJust drop me a line and let\'s get this conversation rolling! 💬',
+    'ru': '🛠️ <b>Команды и всякое:</b>\n\n/settings - Настрой бота под себя\n/start - Перезапустить меня\n/reset - Начать с чистого листа (стереть мою память 😄)\n/language - Сменить язык\n/help - Ты это сейчас читаешь! 😆\n\n<b>Что я умею:</b>\n• Болтать вообще о чем угодно\n• Смотреть на твои фотки и рассказывать что там\n• Говорить на разных языках\n• Кодить и даже багфиксы!\n\nПросто пиши что в голову придет, и погнали общаться! 💬',
+    'uz': '🛠️ <b>Buyruqlar va boshqalar:</b>\n\n/settings - Chatni o\'zingizga moslang\n/start - Botni qayta boshlash\n/reset - Chat tarixini tozalash (хotiramni tozalash 😄)\n/language - Tilni almashtirish\n/help - Hozir shuni o\'qiyapsiz! 😆\n\n<b>Nima qila olaman:</b>\n• Har qanday narsa haqida gaplashish\n• Rasmlarni ko\'ra olaman \n• Turli tillarda gaplasha olaman\n• Coding va bug fixing!\n\nXohlaganingizni yozing va keling suhbatlashamiz! 💬'
   },
 
   'settingsMessage': {
-    'en': '⚙️ <b>Settings</b>\n\n🤖 <b>Current model:</b> {currentModel}\n🌐 <b>Language:</b> {currentLanguage}\n📊 <b>Messages in history:</b> {historyCount}\n\nSelect what you want to change:',
-    'ru': '⚙️ <b>Настройки</b>\n\n🤖 <b>Текущая модель:</b> {currentModel}\n🌐 <b>Язык:</b> {currentLanguage}\n📊 <b>Сообщений в истории:</b> {historyCount}\n\nВыберите что хотите изменить:',
-    'uz': '⚙️ <b>Sozlamalar</b>\n\n🤖 <b>Joriy model:</b> {currentModel}\n🌐 <b>Til:</b> {currentLanguage}\n📊 <b>Tarixdagi xabarlar:</b> {historyCount}\n\nO\'zgartirmoqchi bo\'lgan narsani tanlang:'
+    'en': '⚙️ <b>Settings</b>\n\n🌐 <b>Language:</b> {currentLanguage}\n📊 <b>Messages in history:</b> {historyCount}\n\nSelect what you want to change:',
+    'ru': '⚙️ <b>Настройки</b>\n\n🌐 <b>Язык:</b> {currentLanguage}\n📊 <b>Сообщений в истории:</b> {historyCount}\n\nВыберите что хотите изменить:',
+    'uz': '⚙️ <b>Sozlamalar</b>\n\n🌐 <b>Til:</b> {currentLanguage}\n📊 <b>Tarixdagi xabarlar:</b> {historyCount}\n\nO\'zgartirmoqchi bo\'lgan narsani tanlang:'
   },
 
   'selectLanguage': {
@@ -89,11 +83,7 @@ export const LOCALIZATION_KEYS = {
     'uz': '🌍 Iltimos, tilingizni tanlang:'
   },
 
-  'selectModel': {
-    'en': '🤖 <b>Model Selection</b>\n\n<b>Current model:</b> {currentModel}\n\n<i>Lite:</i> Fast and economical model\n<i>Pro:</i> Advanced model with image support\n<i>X:</i> Most powerful model with image support\n\nSelect a model:',
-    'ru': '🤖 <b>Выбор модели</b>\n\n<b>Текущая модель:</b> {currentModel}\n\n<i>Lite:</i> Быстрая и экономичная модель\n<i>Pro:</i> Продвинутая модель с поддержкой изображений\n<i>X:</i> Самая мощная модель с поддержкой изображений\n\nВыберите модель:',
-    'uz': '🤖 <b>Model tanlash</b>\n\n<b>Joriy model:</b> {currentModel}\n\n<i>Lite:</i> Tez va tejamkor model\n<i>Pro:</i> Rasm qo\'llab-quvvatlaydigan ilg\'or model\n<i>X:</i> Rasm qo\'llab-quvvatlaydigan eng kuchli model\n\nModel tanlang:'
-  },
+
 
 
   // Notification and status
@@ -103,29 +93,7 @@ export const LOCALIZATION_KEYS = {
     'uz': '🌍 Til o\'zbekchaga o\'zgartirildi!'
   },
 
-  'modelChanged': {
-    'en': 'Model changed to {model}!',
-    'ru': 'Модель изменена на {model}!',
-    'uz': 'Model {model}ga o\'zgartirildi!'
-  },
 
-  'modelAlreadySelected': {
-    'en': 'Model already selected!',
-    'ru': 'Модель уже выбрана!',
-    'uz': 'Model allaqachon tanlangan!'
-  },
-
-  'modelAlreadyInUse': {
-    'en': '✅ You are already using the {model} model!',
-    'ru': '✅ Вы уже используете модель {model}!',
-    'uz': '✅ Siz allaqachon {model} modelidan foydalanmoqdasiz!'
-  },
-
-  'modelSwitched': {
-    'en': '🤖 Switched to {model} {emoji} model!',
-    'ru': '🤖 Переключено на модель {model} {emoji}!',
-    'uz': '🤖 {model} {emoji} modelga o\'tkazildi!'
-  },
 
   'historyCleared': {
     'en': 'History cleared!',
@@ -146,9 +114,9 @@ export const LOCALIZATION_KEYS = {
   },
 
   'errorMessage': {
-    'en': '⌛ Sorry, an error occurred. Please try again later or contact with us @Farkhodov_2077',
-    'ru': '⌛ Извините, произошла ошибка. Попробуйте позже или свяжитесь с нами @Farkhodov_2077',
-    'uz': '⌛ Kechirasiz, xatolik yuz berdi. Keyinroq urinib ko\'ring biz bilan bog\'laning @Farkhodov_2077'
+    'en': '⌛ Sorry, an error occurred. Try again later',
+    'ru': '⌛ Извините, произошла ошибка. Попробуйте позже',
+    'uz': '⌛ Kechirasiz, xatolik yuz berdi. Keyinroq urinib ko\'ring'
   },
 
   'imageNotSupported': {
@@ -181,11 +149,7 @@ export const LOCALIZATION_KEYS = {
     'uz': '⚙️ Parametrlar'
   },
 
-  'settingsCurrentModel': {
-    'en': '🤖 Current model: {model}',
-    'ru': '🤖 Текущая модель: {model}',
-    'uz': '🤖 Joriy model: {model}'
-  },
+
 
   'settingsCurrentLanguage': {
     'en': '🌍 Language: {language}',
@@ -205,17 +169,7 @@ export const LOCALIZATION_KEYS = {
     'uz': 'Nima o\'zgartirmoqchi ekanligingizni tanlang:'
   },
 
-  'settingsModelSelection': {
-    'en': '🤖 Model Selection',
-    'ru': '🤖 Выбор модели',
-    'uz': '🤖 Model tanlash'
-  },
 
-  'settingsModelDescription': {
-    'en': 'Current model: {model}\n\nLite: Fast and economical model\nPro: Advanced model with image support  \nX: Most powerful model with image support\n\nChoose a model:',
-    'ru': 'Текущая модель: {model}\n\nLite: Быстрая и эффекивная модель\nPro: Продвинутая модель с поддержкой изображений\nX: Самая мощная модель с поддержкой изображений\n\nВыберите модель:',
-    'uz': 'Joriy model: {model}\n\nLite: Tez va tejamkor model\nPro: Rasm qo\'llab-quvvatlash bilan ilg\'or model\nX: Rasm qo\'llab-quvvatlash bilan eng kuchli model\n\nModel tanlang:'
-  },
 
   'botStarting': {
     'en': 'Starting Telegram Bot...',

@@ -22,11 +22,6 @@ export class KeyboardService {
     const changeLanguageBtn = getLocalized(user.chatId || 0, userLangMap, 'changeLanguageBtn');
     keyboard.text(`🌐 ${changeLanguageBtn}`, 'settings_language').row();
     
-    // Кнопки моделей
-    const modelBtn = getLocalized(user.chatId || 0, userLangMap, 'modelBtn');
-    const currentModel = this.getModelDisplayName(user.model);
-    keyboard.text(`🤖 ${modelBtn}: ${currentModel}`, 'settings_model').row();
-    
     // Кнопка сброса истории
     const clearHistoryBtn = getLocalized(user.chatId || 0, userLangMap, 'clearHistoryBtn');
     keyboard.text(`🗑️ ${clearHistoryBtn}`, 'settings_reset').row();
@@ -42,29 +37,7 @@ export class KeyboardService {
     return keyboard;
   }
 
-  /**
-   * Создание клавиатуры выбора модели
-   */
-  createModelKeyboard(currentModel, language) {
-    const keyboard = new InlineKeyboard();
-    const userLangMap = new Map([[0, language]]);
-    
-    Object.entries(MODELS).forEach(([modelKey, modelValue]) => {
-      const isActive = currentModel === modelValue;
-      const modelName = this.getModelName(modelKey);
-      const emoji = MODEL_EMOJIS[modelKey.toLowerCase()];
-      const checkmark = isActive ? ' ✅' : '';
-      
-      const text = `${emoji} ${modelName}${checkmark}`;
-      keyboard.text(text, `model_${modelKey.toLowerCase()}`).row();
-    });
-    
-    // Кнопка "Назад"
-    const backBtn = getLocalized(0, userLangMap, 'backBtn');
-    keyboard.text(`🔙 ${backBtn}`, 'settings_back').row();
-    
-    return keyboard;
-  }
+
 
   /**
    * Получение отображаемого имени модели

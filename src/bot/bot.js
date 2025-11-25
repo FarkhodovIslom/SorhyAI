@@ -33,7 +33,7 @@ export function createBot(userManager) {
     baseURL: 'https://openrouter.ai/api/v1',
   });
 
-  const bot = new Bot(process.env.TGBOT_API_KEY);
+  const bot = new Bot(process.env.TGBOT_API_KEY2);
 
   // Bot state
   let botUsername = '';

@@ -139,13 +139,7 @@ export class CommandHandler {
       await this.handleReset(ctx.chat.id, ctx);
     }));
     
-    // Команды для моделей
-    Object.keys(MODELS).forEach(modelKey => {
-      const modelName = modelKey.toLowerCase();
-      this.commandComposer.command(`model_${modelName}`, this.createCommandHandler(async (ctx) => {
-        await this.handleModelSwitch(modelKey, ctx.chat.id, ctx);
-      }));
-    });
+
     
     // Команда /language
     this.commandComposer.command('language', this.createCommandHandler(async (ctx) => {
@@ -214,7 +208,7 @@ setupCallbackHandlers() {
       
       const actionHandlers = {
         'settings_language': () => this.handleSettingsLanguage(chatId, ctx),
-        'settings_model': () => this.handleSettingsModel(chatId, ctx),
+
         'settings_reset': () => this.handleSettingsReset(chatId, ctx),
         'settings_help': () => this.handleSettingsHelp(chatId, ctx),
         'settings_back': () => this.handleSettings(chatId, ctx),
@@ -229,25 +223,7 @@ setupCallbackHandlers() {
       }
     }));
 
-    // Выбор модели
-    this.commandComposer.callbackQuery(/^model_/, this.createCallbackHandler(async (ctx) => {
-      const action = ctx.callbackQuery.data;
-      const chatId = ctx.chat.id;
-      const modelName = action.split('_')[1];
-      
-      await ctx.answerCallbackQuery();
-      
-      // Найти соответствующий ключ модели
-      const modelKey = Object.keys(MODELS).find(key => 
-        key.toLowerCase() === modelName.toLowerCase()
-      );
-      
-      if (modelKey) {
-        await this.handleModelSwitch(modelKey, chatId, ctx, true);
-      } else {
-        throw new ValidationError(`Unknown model: ${modelName}`, 'model');
-      }
-    }));
+
 
     // Выбор языка
     this.commandComposer.callbackQuery(/^lang_/, this.createCallbackHandler(async (ctx) => {
@@ -293,58 +269,7 @@ setupCallbackHandlers() {
     };
   }
 
-  /**
-   * Универсальный обработчик переключения моделей
-   */
-  async handleModelSwitch(modelKey, chatId, ctx = null, fromSettings = false) {
-    if (!MODELS[modelKey]) {
-      throw new ValidationError(`Invalid model key: ${modelKey}`, 'modelKey');
-    }
 
-    const user = await this.getUser(chatId);
-    const modelValue = MODELS[modelKey];
-    const modelDisplayName = this.keyboardService.getModelDisplayName(modelValue);
-    
-    if (user.model === modelValue) {
-      if (fromSettings) {
-        const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadySelected');
-        await ctx.answerCallbackQuery(message);
-        return;
-      }
-      
-      await this.sendMessage(
-        chatId, 
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'modelAlreadyInUse', { 
-          model: modelDisplayName 
-        }),
-        {},
-        ctx
-      );
-      return;
-    }
-
-    // Переключаем модель
-    user.model = modelValue;
-    user.updateActivity();
-    await this.saveUser(chatId, user);
-    
-    if (fromSettings) {
-      const message = getLocalized(chatId, new Map([[chatId, user.language]]), 'modelChanged', {
-        model: modelDisplayName
-      });
-      await ctx.answerCallbackQuery(message);
-      await this.handleSettings(chatId, ctx);
-    } else {
-      await this.sendMessage(
-        chatId, 
-        getLocalized(chatId, new Map([[chatId, user.language]]), 'modelSwitched', { 
-          model: modelDisplayName
-        }),
-        {},
-        ctx
-      );
-    }
-  }
 
   /**
    * Обработчик команды /start
@@ -377,7 +302,6 @@ setupCallbackHandlers() {
     const user = await this.getUser(chatId);
     
     const settingsText = getLocalized(chatId, new Map([[chatId, user.language]]), 'settingsMessage', {
-      currentModel: this.keyboardService.getModelDisplayName(user.model),
       currentLanguage: this.keyboardService.getLanguageDisplayName(user.language),
       historyCount: user.history.length
     });
@@ -407,21 +331,7 @@ setupCallbackHandlers() {
     });
   }
 
-  /**
-   * Обработчик настройки модели
-   */
-  async handleSettingsModel(chatId, ctx) {
-    const user = await this.getUser(chatId);
-    
-    const text = getLocalized(chatId, new Map([[chatId, user.language]]), 'selectModel', {
-      currentModel: this.keyboardService.getModelDisplayName(user.model)
-    });
 
-    await this.editMessage(ctx, text, {
-      parse_mode: 'HTML',
-      reply_markup: this.keyboardService.createModelKeyboard(user.model, user.language)
-    });
-  }
 
   /**
    * Обработчик сброса истории из настроек
@@ -529,21 +439,7 @@ setupCallbackHandlers() {
     await this.sendMessage(chatId, statsMessage, { parse_mode: 'HTML' }, ctx);
   }
 
-  /**
-   * Legacy методы для обратной совместимости
-   */
-  
-  async handleModelLite(chatId, ctx = null, fromSettings = false) {
-    return this.handleModelSwitch('LITE', chatId, ctx, fromSettings);
-  }
 
-  async handleModelPro(chatId, ctx = null, fromSettings = false) {
-    return this.handleModelSwitch('PRO', chatId, ctx, fromSettings);
-  }
-
-  async handleModelX(chatId, ctx = null, fromSettings = false) {
-    return this.handleModelSwitch('X', chatId, ctx, fromSettings);
-  }
 
   /**
    * Legacy метод для обратной совместимости
@@ -568,11 +464,7 @@ setupCallbackHandlers() {
         '/stats': () => chatId === DEVELOPER_ID ? this.handleStats(chatId, legacyCtx) : null
       };
 
-      // Обработка команд моделей
-      Object.keys(MODELS).forEach(modelKey => {
-        const cmd = `/model_${modelKey.toLowerCase()}`;
-        commandHandlers[cmd] = () => this.handleModelSwitch(modelKey, chatId, legacyCtx);
-      });
+
 
       const handler = commandHandlers[command];
       
@@ -612,9 +504,7 @@ setupCallbackHandlers() {
    */
   getAvailableCommands() {
     const baseCommands = ['/start', '/reset', '/language', '/settings', '/help'];
-    const modelCommands = Object.keys(MODELS).map(key => `/model_${key.toLowerCase()}`);
-    
-    return [...baseCommands, ...modelCommands, '/stats'];
+    return [...baseCommands, '/stats'];
   }
 
   /**
