@@ -45,3 +45,5 @@ yarn-error.log*
 *.njsproj
 .claude
 .cursor
+
+chad.sh
