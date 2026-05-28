@@ -1,164 +1,164 @@
-# SorhyAI  
-**Персональный ИИ-бот с характером.**  
-Работает на базе Cypher Alpha.  
+# Turborepo starter
 
-## 📖 Описание проекта
-SorhyAI - это персональный ИИ-бот, который предоставляет пользователю возможность взаимодействовать с ИИ в удобной форме. Бот поддерживает множество команд и функций, включая управление пользователями, локализацию и обработку команд. SorhyAI создан для того, чтобы быть вашим личным помощником, который понимает ваши потребности и помогает в повседневных задачах.
+This Turborepo starter is maintained by the Turborepo core team.
 
-### Характеристики:
-- **Персонализация**: ИИ адаптируется под ваши предпочтения и стиль общения.
-- **Многофункциональность**: Поддержка различных команд и функций.
-- **Локализация**: Поддержка нескольких языков для удобства пользователей.
-- **Мультимодельность**: Image/Text to Text.
+## Using this example
 
----
+Run the following command:
 
-## 🐳 Docker Deployment
-
-### Prerequisites
-- Docker installed 
-- Docker Compose installed
-
-### Quick Start
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/FarkhodovIslom/SorhyAI_bot.git
-   cd SorhyAI_bot
-   ```
-
-2. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` file and add your API keys:
-   ```
-   OPENROUTER_API_KEY=your_openrouter_api_key_here
-   TGBOT_API_KEY=your_telegram_bot_api_key_here
-   DEV_ACCESS_KEY=your_developer_access_key_here
-   ```
-
-3. **Start with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
-
-   Or use the convenience script:
-   ```bash
-   ./docker-start.sh
-   ```
-
-### Docker Commands
-
-- **Start in background**: `docker-compose up -d --build`
-- **Stop containers**: `docker-compose down`
-- **View logs**: `docker-compose logs -f`
-- **Rebuild containers**: `docker-compose build --no-cache`
-
-### Environment Variables
-
-Required environment variables:
-- `OPENROUTER_API_KEY` - Your OpenRouter API key
-- `TGBOT_API_KEY` - Your Telegram Bot API key
-- `DEV_ACCESS_KEY` - Developer access key
-
-Optional environment variables:
-- `MONGODB_URI` - Custom MongoDB connection string
-- `MODEL_LITE`, `MODEL_PRO`, `MODEL_X` - Model configurations
-- `DEVELOPER_ID` - Developer Telegram ID
-- `LOG_LEVEL` - Logging level (default: info)
-- `NODE_ENV` - Node environment (default: production)
-
-### Ports
-- Application: 3000
-- MongoDB: 27017
-
----
-
-### 📁 Проектная структура
-
-```
-SorhyAI_bot/
-├── .dockerignore
-├── .env.example
-├── docker-compose.yml
-├── Dockerfile
-├── docker-start.sh
-├── .gitignore
-├── package.json
-├── package-lock.json
-├── README.md
-├── Procfile
-├── start.sh
-├── docs/
-│   └── command-list-en.txt
-├── logs/
-│   └── sorhy-log.txt
-├── src/
-│   ├── index.js
-│   ├── bot/
-│   │   ├── bot.js
-│   │   ├── config/
-│   │   │   └── config.js
-│   │   ├── handlers/
-│   │   │   └── commandHandler.js
-│   │   ├── localization/
-│   │   │   ├── keys.js
-│   │   │   └── localization.js
-│   │   ├── prompt/
-│   │   │   └── systemPrompt.js
-│   │   └── services/
-│   │       └── keyboardService.js
-│   ├── core/
-│   │   ├── database/
-│   │   │   └── userManager.js
-│   │   └── utils/
-│   │       ├── errorHandler.js
-│   │       └── logger.js
-│   └── server/
-│       ├── server.js
-│       ├── public/
-│       │   ├── assets/
-│       │   │   ├── background.png
-│       │   │   ├── SorhyAI logo.png
-│       │   │   └── SorhyAI_favicon.png
-│       │   └── css/
-│       │       ├── index.css
-│       │       ├── style.css
-│       │       └── users.css
-│       ├── routes/
-│       │   └── admin.routes.js
-│       └── views/
-│           ├── index.ejs
-│           └── users.ejs
+```sh
+npx create-turbo@latest
 ```
 
----
-### 📜 Описание файлов
-- **.gitignore** - Список файлов и папок, которые не должны попадать в репозиторий.
-- **package.json** - Файл с зависимостями и метаданными проекта.
-- **README.md** - Документация проекта.
-- **docs/** - Папка с документацией, включая список команд.
-- **logs/** - Папка для логов бота.
-- **src/** - Исходный код бота.
-- **src/index.js** - Точка входа в приложение.
-- **src/bot/** - Логика бота, включая конфигурацию, обработчики команд, локализацию и сервисы.
-  - **bot.js** - Основной файл бота.
-  - **config/** - Конфигурационные файлы.
-  - **handlers/** - Обработчики команд и событий.
-  - **localization/** - Файлы локализации и переводов.
-  - **prompt/** - Системные промпты и инструкции.
-  - **services/** - Сервисные функции и утилиты.
-- **src/core/** - Основные функции, включая управление пользователями и утилиты.
-  - **database/** - Управление базой данных пользователей.
-  - **utils/** - Вспомогательные утилиты и обработчики ошибок.
-- **src/server/** - Серверная часть приложения, включая маршруты и представления.
-  - **server.js** - Основной файл сервера.
-  - **public/** - Статические файлы веб-интерфейса.
-    - **assets/** - Изображения, логотипы и другие ресурсы.
-    - **css/** - Стили и оформление веб-интерфейса.
-  - **routes/** - Маршруты API и веб-страниц.
-  - **views/** - EJS шаблоны для веб-страниц.
+## What's inside?
 
-**Автор:** Hanzo Dev  
-> *"ИИ должен быть твоим, а не корпораций."*
+This Turborepo includes the following packages/apps:
+
+### Apps and Packages
+
+- `docs`: a [Next.js](https://nextjs.org/) app
+- `web`: another [Next.js](https://nextjs.org/) app
+- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
+- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
+- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+
+### Utilities
+
+This Turborepo has some additional tools already setup for you:
+
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
+
+### Build
+
+To build all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo build
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo build
+pnpm dlx turbo build
+pnpm exec turbo build
+```
+
+You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo build --filter=docs
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo build --filter=docs
+pnpm exec turbo build --filter=docs
+pnpm exec turbo build --filter=docs
+```
+
+### Develop
+
+To develop all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo dev
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo dev
+pnpm exec turbo dev
+pnpm exec turbo dev
+```
+
+You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo dev --filter=web
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo dev --filter=web
+pnpm exec turbo dev --filter=web
+pnpm exec turbo dev --filter=web
+```
+
+### Remote Caching
+
+> [!TIP]
+> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+
+Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+
+By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo login
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo login
+pnpm exec turbo login
+pnpm exec turbo login
+```
+
+This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+
+Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo link
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo link
+pnpm exec turbo link
+pnpm exec turbo link
+```
+
+## Useful Links
+
+Learn more about the power of Turborepo:
+
+- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
+- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
+- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
+- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
+- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
+- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+
+Website:
+
+- https://kibo.i37.uz
+
