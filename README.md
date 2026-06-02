@@ -586,7 +586,7 @@ Built with:
 If you use SorhyAI in your research or project, please cite:
 
 ```bibtex
-@software{sorhy_ai_2025,
+@software{sorhy_ai_2026,
   title = {SorhyAI: AI Telegram Bot SaaS Platform},
   author = {Farkhodov, Islom},
   url = {https://github.com/FarkhodovIslom/SorhyAI},
@@ -596,4 +596,4 @@ If you use SorhyAI in your research or project, please cite:
 
 ---
 
-**Last Updated:** June 2, 2025 | **Maintained by:** [FarkhodovIslom](https://github.com/FarkhodovIslom)
+**Last Updated:** June 2, 2026 | **Maintained by:** [FarkhodovIslom](https://github.com/FarkhodovIslom)
