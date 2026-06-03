@@ -30,7 +30,7 @@ Make sure you have the following installed:
 
 1. **Fork and clone the repository:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/SorhyAI.git
+   git clone https://github.com/FarkhodovIslom/SorhyAI.git
    cd SorhyAI
    ```
 
