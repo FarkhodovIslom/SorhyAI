@@ -1,0 +1,23 @@
+{
+  "name": "@sorhy/bot",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "start": "bun dist/index.js",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sorhy/config": "workspace:*",
+    "@sorhy/db": "workspace:*",
+    "@sorhy/redis": "workspace:*",
+    "grammy": "^1.31.0",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2",
+    "@types/node": "^22.0.0"
+  }
+}
