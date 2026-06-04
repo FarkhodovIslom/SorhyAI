@@ -1,0 +1,1 @@
+export { mainMenuKeyboard, settingsKeyboard, languageKeyboard, styleKeyboard } from './main.js';
