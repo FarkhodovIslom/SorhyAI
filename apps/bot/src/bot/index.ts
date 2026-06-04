@@ -1,6 +1,8 @@
 import { Bot, session } from "grammy";
 import type { BotContext, SessionData } from "../types.js";
 import { createRedisStorage, getRedisClient } from "@sorhy/redis";
+import { startCommand, helpCommand } from "./commands.js";
+import { handleCallbacks } from "./callbacks.js";
 
 export function createBot(token: string): Bot<BotContext> {
   const bot = new Bot<BotContext>(token);
@@ -21,14 +23,12 @@ export function createBot(token: string): Bot<BotContext> {
     console.log(`[${ctx.updateType}] ${ms}ms — user: ${ctx.from?.id}`);
   });
 
-  // /start команда
-  bot.command("start", async (ctx) => {
-    await ctx.reply(
-      `👋 Привет, ${ctx.from?.first_name ?? "друг"}!\n\n` +
-        `Я Sorhy — AI ассистент нового поколения.\n\n` +
-        `Просто напиши мне что-нибудь, и я отвечу`,
-    );
-  });
+  // Команды
+  bot.command("start", startCommand);
+  bot.command("help", helpCommand);
+
+  // Коллбеки
+  bot.on("callback_query:data", handleCallbacks);
 
   // Error handler
   bot.catch((err) => {
