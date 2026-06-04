@@ -1,28 +1,28 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IGroup extends Document {
-    telegramId: string;
-    title?: string;
-    settings: {
-        aiEnabled: boolean;
-        aiTrigger: 'always' | 'mention' | 'replay';
-        language: string;
-        welcomeMessage?: string;
-        aiSystemPrompt?: string;
-    };
-    moderation: {
-        automodEnabled: boolean;
-        aiModEnabled: boolean;
-        bannedWords: string[];
-        warnThreshold: number;
-        spamProtection: boolean;
-    };
-    admins: string[];
-    adSettings: {
-        adsEnabled: boolean;
-        adFrequency: number;
-    };
-    createdAt: Date;
+  telegramId: string;
+  title?: string;
+  settings: {
+    aiEnabled: boolean;
+    aiTrigger: "always" | "mention" | "replay";
+    language: string;
+    welcomeMessage?: string;
+    aiSystemPrompt?: string;
+  };
+  moderation: {
+    automodEnabled: boolean;
+    aiModEnabled: boolean;
+    bannedWords: string[];
+    warnThreshold: number;
+    spamProtection: boolean;
+  };
+  admins: string[];
+  adSettings: {
+    adsEnabled: boolean;
+    adFrequency: number;
+  };
+  createdAt: Date;
 }
 
 const GroupSchema = new Schema<IGroup>({
@@ -31,8 +31,12 @@ const GroupSchema = new Schema<IGroup>({
 
   settings: {
     aiEnabled: { type: Boolean, default: true },
-    aiTrigger: { type: String, enum: ['mention', 'reply', 'always'], default: 'mention' },
-    language: { type: String, default: 'ru' },
+    aiTrigger: {
+      type: String,
+      enum: ["mention", "reply", "always"],
+      default: "mention",
+    },
+    language: { type: String, default: "ru" },
     welcomeMessage: String,
     aiSystemPrompt: String,
   },
@@ -55,4 +59,4 @@ const GroupSchema = new Schema<IGroup>({
   createdAt: { type: Date, default: Date.now },
 });
 
-export const Group = model<IGroup>('Group', GroupSchema);
+export const Group = model<IGroup>("Group", GroupSchema);
