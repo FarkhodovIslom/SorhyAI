@@ -1,1 +1,6 @@
-export { mainMenuKeyboard, settingsKeyboard, languageKeyboard, styleKeyboard } from './main.js';
+export {
+  mainMenuKeyboard,
+  settingsKeyboard,
+  languageKeyboard,
+  styleKeyboard,
+} from "./main.js";
